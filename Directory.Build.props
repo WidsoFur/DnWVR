@@ -1,0 +1,24 @@
+<Project>
+  <!-- Optional machine-specific overrides (git-ignored), e.g. <GameDir>D:\SteamLibrary\steamapps\common\Drag'n Wash</GameDir> -->
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.user.props" Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.user.props')" />
+
+  <PropertyGroup>
+    <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Drag'n Wash</GameDir>
+    <GameDataDir>$(GameDir)\DragNWash_Data</GameDataDir>
+    <ManagedDir>$(GameDataDir)\Managed</ManagedDir>
+    <MelonDir>$(GameDir)\MelonLoader\net35</MelonDir>
+    <!-- Unity XR assemblies: the provider in this repository (openxr\), else the copies a release installed into the game -->
+    <XRProviderDir>$(MSBuildThisFileDirectory)openxr</XRProviderDir>
+    <XRManagedDir Condition="'$(XRManagedDir)' == '' And Exists('$(XRProviderDir)\Managed\Unity.XR.OpenXR.dll')">$(XRProviderDir)\Managed</XRManagedDir>
+    <XRManagedDir Condition="'$(XRManagedDir)' == ''">$(ManagedDir)</XRManagedDir>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <!-- Keep the machine out of the binaries: embedded source and pdb paths become /_/... -->
+    <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <NoWarn>$(NoWarn);CS1591;CS0649</NoWarn>
+  </PropertyGroup>
+</Project>

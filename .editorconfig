@@ -1,0 +1,79 @@
+# EditorConfig (https://editorconfig.org): the house style of this repository.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{md,yml,yaml,json}]
+indent_size = 2
+
+[*.{csproj,props,targets,sln}]
+indent_size = 2
+
+[*.ps1]
+indent_size = 4
+
+[*.cs]
+# Usings sit outside the namespace, System first, in one block.
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:suggestion
+
+# Allman braces, and a short guard clause may go without them.
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = when_multiline:suggestion
+
+# var where the right-hand side already says the type, the type itself where it does not.
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = when_on_single_line:suggestion
+
+# One namespace per layer (DnWVR.VR, DnWVR.XR), with folders below it grouping files by subject.
+dotnet_style_namespace_match_folder = false
+
+# this. is never written; fields say what they are by their prefix.
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
+# Fields: private statics are s_camelCase, instance fields _camelCase, constants and everything public PascalCase.
+dotnet_naming_rule.static_fields.severity = suggestion
+dotnet_naming_rule.static_fields.symbols = private_static_field
+dotnet_naming_rule.static_fields.style = s_camel_case
+
+dotnet_naming_rule.instance_fields.severity = suggestion
+dotnet_naming_rule.instance_fields.symbols = private_field
+dotnet_naming_rule.instance_fields.style = underscore_camel_case
+
+dotnet_naming_rule.constants.severity = suggestion
+dotnet_naming_rule.constants.symbols = constant
+dotnet_naming_rule.constants.style = pascal_case
+
+dotnet_naming_symbols.private_static_field.applicable_kinds = field
+dotnet_naming_symbols.private_static_field.applicable_accessibilities = private, internal
+dotnet_naming_symbols.private_static_field.required_modifiers = static
+
+dotnet_naming_symbols.private_field.applicable_kinds = field
+dotnet_naming_symbols.private_field.applicable_accessibilities = private, internal
+
+dotnet_naming_symbols.constant.applicable_kinds = field
+dotnet_naming_symbols.constant.applicable_accessibilities = *
+dotnet_naming_symbols.constant.required_modifiers = const
+
+dotnet_naming_style.s_camel_case.capitalization = camel_case
+dotnet_naming_style.s_camel_case.required_prefix = s_
+
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case

@@ -1,0 +1,15 @@
+# build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# runtime dumps
+*.log
+
+# machine-specific build settings
+Directory.Build.user.props
+
+# release packages
+dist/

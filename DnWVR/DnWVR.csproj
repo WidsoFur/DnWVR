@@ -1,0 +1,125 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>DnWVR</AssemblyName>
+    <RootNamespace>DnWVR</RootNamespace>
+    <Version>0.1.0</Version>
+    <OutputType>Library</OutputType>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!-- MelonLoader -->
+  <ItemGroup>
+    <Reference Include="MelonLoader">
+      <HintPath>$(MelonDir)\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(MelonDir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- The game's assemblies target netstandard 2.1; net472 only knows 2.0, so use the game's facade -->
+  <ItemGroup>
+    <Reference Include="netstandard">
+      <HintPath>$(ManagedDir)\netstandard.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Unity engine modules shipped with the game -->
+  <ItemGroup>
+    <UnityRef Include="UnityEngine" />
+    <UnityRef Include="UnityEngine.CoreModule" />
+    <UnityRef Include="UnityEngine.PhysicsModule" />
+    <UnityRef Include="UnityEngine.InputLegacyModule" />
+    <UnityRef Include="UnityEngine.InputModule" />
+    <UnityRef Include="UnityEngine.XRModule" />
+    <UnityRef Include="UnityEngine.VRModule" />
+    <UnityRef Include="UnityEngine.SubsystemsModule" />
+    <UnityRef Include="UnityEngine.UIModule" />
+    <UnityRef Include="UnityEngine.UI" />
+    <UnityRef Include="UnityEngine.IMGUIModule" />
+    <UnityRef Include="UnityEngine.UIElementsModule" />
+    <UnityRef Include="UnityEngine.TextRenderingModule" />
+    <UnityRef Include="UnityEngine.TextCoreTextEngineModule" />
+    <UnityRef Include="UnityEngine.TextCoreFontEngineModule" />
+    <UnityRef Include="UnityEngine.AnimationModule" />
+    <UnityRef Include="UnityEngine.AudioModule" />
+    <UnityRef Include="UnityEngine.AssetBundleModule" />
+    <UnityRef Include="UnityEngine.ImageConversionModule" />
+    <UnityRef Include="UnityEngine.JSONSerializeModule" />
+    <UnityRef Include="UnityEngine.ParticleSystemModule" />
+    <UnityRef Include="UnityEngine.VFXModule" />
+    <UnityRef Include="UnityEngine.ScreenCaptureModule" />
+    <UnityRef Include="Unity.InputSystem" />
+    <UnityRef Include="Unity.RenderPipelines.Universal.Runtime" />
+    <UnityRef Include="Unity.RenderPipelines.Core.Runtime" />
+    <UnityRef Include="Unity.TextMeshPro" />
+    <UnityRef Include="Unity.Mathematics" />
+    <UnityRef Include="Unity.Addressables" />
+    <UnityRef Include="Unity.ResourceManager" />
+    <UnityRef Include="Newtonsoft.Json" />
+    <!-- Game assemblies -->
+    <UnityRef Include="Assembly-CSharp" />
+    <UnityRef Include="GatorDragonGamesExtensions" />
+    <UnityRef Include="com.naelstrof.orbitcam" />
+    <UnityRef Include="Naelstrof.UnityScriptableSettings" />
+    <UnityRef Include="Naelstrof.Extensions" />
+    <UnityRef Include="com.alelievr.NodeGraphProcessor.Runtime" />
+    <UnityRef Include="com.gator-dragon-games.physics-audio" />
+    <UnityRef Include="com.naelstrof-raliv.fluid-rendering-for-games" />
+    <UnityRef Include="com.naelstrof.skinnedmeshdecals" />
+    <UnityRef Include="YarnSpinner.Unity" />
+    <UnityRef Include="YarnSpinner" />
+    <UnityRef Include="NaelstrofRaliv.DynamicPenetrationForGames" />
+    <UnityRef Include="Naelstrof.Splines" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="@(UnityRef)">
+      <HintPath>$(ManagedDir)\%(Identity).dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Unity XR assemblies (XRManagedDir is resolved in Directory.Build.props) -->
+  <ItemGroup>
+    <XRRef Include="Unity.XR.OpenXR" />
+    <XRRef Include="Unity.XR.Management" />
+    <XRRef Include="Unity.XR.CoreUtils" />
+    <Reference Include="@(XRRef)">
+      <HintPath>$(XRManagedDir)\%(Identity).dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- One clear error instead of hundreds of compile errors when the game, MelonLoader or the OpenXR provider is missing -->
+  <Target Name="CheckGameReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ManagedDir)\Assembly-CSharp.dll')" Text="Drag'n Wash not found in '$(GameDir)'. Set GameDir in Directory.Build.user.props (see README, Development)." />
+    <Error Condition="!Exists('$(MelonDir)\MelonLoader.dll')" Text="MelonLoader 0.7.3 is not installed in '$(GameDir)'." />
+    <Error Condition="!Exists('$(XRManagedDir)\Unity.XR.OpenXR.dll')" Text="Unity OpenXR assemblies not found in '$(XRManagedDir)'. They ship in openxr\ - see openxr\README.md." />
+  </Target>
+
+  <!-- Unity's OpenXR provider, laid out like the game's data folder (see openxr\README.md) -->
+  <ItemGroup>
+    <XRProviderManaged Include="$(XRProviderDir)\Managed\*.dll" />
+    <XRProviderNative Include="$(XRProviderDir)\Plugins\x86_64\*.dll" />
+    <XRProviderSubsystem Include="$(XRProviderDir)\UnitySubsystems\UnityOpenXR\*.json" />
+  </ItemGroup>
+
+  <!-- Deploy into the game after every build: the mod, and the XR files the game has none of (unchanged ones are left alone) -->
+  <Target Name="DeployToGame" AfterTargets="Build" Condition="'$(SkipDeploy)' != 'true'">
+    <MakeDir Directories="$(GameDir)\Mods;$(GameDataDir)\Plugins\x86_64;$(GameDataDir)\UnitySubsystems\UnityOpenXR" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(GameDir)\Mods" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(GameDir)\Mods" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    <Copy SourceFiles="@(XRProviderManaged)" DestinationFolder="$(ManagedDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(XRProviderNative)" DestinationFolder="$(GameDataDir)\Plugins\x86_64" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(XRProviderSubsystem)" DestinationFolder="$(GameDataDir)\UnitySubsystems\UnityOpenXR" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="DnWVR deployed to $(GameDir)\Mods" />
+  </Target>
+
+</Project>
