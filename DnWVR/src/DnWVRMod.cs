@@ -30,6 +30,7 @@ namespace DnWVR
             PrefToolOffsetPos, PrefToolOffsetEuler, PrefSprayerOffsetPos, PrefLadderOffsetPos;
         public static MelonPreferences_Entry<bool> PrefPhysicalHands, PrefRestOnPenis, PrefRoomScaleBody;
         public static MelonPreferences_Entry<int> PrefPlayerHeightCm;
+        public static MelonPreferences_Entry<bool> PrefPlayerDuckWithHead;
         public static MelonPreferences_Entry<float> PrefPlayerRadius, PrefPlayerPushSpeed, PrefPlayerStepUp,
             PrefPlayerStepRise, PrefPlayerSpringDamping, PrefPlayerSpringLift;
         public static MelonPreferences_Entry<bool> PrefSecondHand, PrefMenuHands;
@@ -120,6 +121,10 @@ namespace DnWVR
                 "How high your eyes are over the floor, in centimetres - the number the VR section of the options " +
                 "screen shows. The game stands you at 180, in the wash and in the sex scenes alike; give it your own " +
                 "and everything is measured from there. The Calibrate button there reads it off the headset");
+            PrefPlayerDuckWithHead = Prefs.CreateEntry("PlayerDuckWithHead", true,
+                "Duck in your room and your body ducks with you: the top of your collider follows your head, so you fit " +
+                "under what you have physically ducked under. Off = the body keeps the height the game gives it and only " +
+                "the crouch button lowers it");
             PrefPlayerRadius = Prefs.CreateEntry("PlayerRadius", 0.2f,
                 "Radius (m) of your body's collider in VR, small enough to stand right next to the dragon (the game's is 0.5; 0 " +
                 "= the game's)");
@@ -467,6 +472,7 @@ namespace DnWVR
             VRHands.RestOnPenis = PrefRestOnPenis.Value;
             VRRig.HeightCm = Mathf.Clamp(PrefPlayerHeightCm.Value, VRSettings.MinHeightCm, VRSettings.MaxHeightCm);
             PlayerBody.RoomScale = PrefRoomScaleBody.Value;
+            PlayerBody.DuckWithHead = PrefPlayerDuckWithHead.Value;
             PlayerBody.Radius = PrefPlayerRadius.Value;
             PlayerBody.PushSpeed = PrefPlayerPushSpeed.Value;
             PlayerBody.StepUp = Mathf.Max(0f, PrefPlayerStepUp.Value);

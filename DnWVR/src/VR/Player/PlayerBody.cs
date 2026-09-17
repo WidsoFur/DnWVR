@@ -84,6 +84,9 @@ namespace DnWVR.VR
         static readonly Collider[] s_overlaps = new Collider[32];
         static readonly List<Collider> s_bodyNear = new List<Collider>();
 
+        /// <summary>The top of your collider follows your head, so ducking under something is a real duck.</summary>
+        public static bool DuckWithHead = true;
+
         /// <summary>Root-local horizontal offset of the capsule and the feet from the rigidbody.</summary>
         public static Vector3 Offset => s_offset;
 
@@ -235,14 +238,29 @@ namespace DnWVR.VR
         }
 
         // The game sizes the capsule from its radius with a fixed bottom offset, so a slimmer one would lower the top (the eyes
-        // follow it) and raise the bottom: refit it to the game's own top and bottom at the current posture.
+        // follow it) and raise the bottom: refit it to the game's own top and bottom at the current posture, and bring the top
+        // down to your own head when you duck under it.
         static void FitCapsule()
         {
             float bottom = s_bottomOffset(s_msc) - s_gameRadius;
             float top = s_bottomOffset(s_msc) + s_gameRadius + s_cylinderHeight(s_msc) * s_msc.Posture;
+            top -= Duck();
             float height = Mathf.Max(top - bottom, 2f * s_capsule.radius);
             s_capsule.height = height;
             s_capsule.center = new Vector3(s_offset.x, bottom + height * 0.5f, s_offset.z);
+        }
+
+        /// <summary>
+        /// How far (m) the top of the capsule sits below the body the game gives you, which is how far your own head is below
+        /// the height the game stands at: the calibration puts your eyes where your head really is over the floor, so the two
+        /// are the same measurement. Ducking shortens the body, standing tall never lengthens it past the game's own - a head
+        /// over the collider costs nothing, a body too big for the wash's doorways would cost plenty. The game's own crouch
+        /// still works through Posture, and the two simply add up.
+        /// </summary>
+        static float Duck()
+        {
+            if (!DuckWithHead || !VRRig.HmdTracked) return 0f;
+            return Mathf.Max(0f, VRRig.GameHeightCm * 0.01f - VRRig.HmdLocalPos.y);
         }
 
         // Moves the capsule from one root-local offset toward another: it stops a skin's width before anything solid (further
