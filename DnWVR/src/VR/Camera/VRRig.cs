@@ -23,22 +23,18 @@ namespace DnWVR.VR
         /// <summary>HMD position (tracking space) that maps onto the game's head position.</summary>
         public static Vector3 HmdNeutralPos;
 
-        /// <summary>
-        /// How high the game itself holds your eyes over the floor, in centimetres - in the wash and, through
-        /// <see cref="SceneWalk"/>, in the sex scenes. At this height the camera is exactly the game's own.
-        /// </summary>
+        /// <summary>The height the game itself stands at, in centimetres, and what the setting below starts from.</summary>
         public const int GameHeightCm = 180;
 
         /// <summary>
-        /// How high your own eyes are over the floor, in centimetres, from the VR section of the options screen. Above
-        /// the game's height your eyes rise over the character's, below it they drop: the neutral head point moves the
-        /// other way by the difference, which lifts the hands with the head, both being placed through this conversion.
+        /// Your own height in centimetres, from the VR section of the options screen. It does not move the camera - the
+        /// eyes stay where the game and your own head put them - it says how tall your body is, measured from your feet,
+        /// which is what <see cref="PlayerBody"/> keeps the collider inside of.
         /// </summary>
         public static int HeightCm = GameHeightCm;
 
-        /// <summary>Neutral head point with the height calibration folded in.</summary>
-        static Vector3 Neutral =>
-            new Vector3(HmdNeutralPos.x, HmdNeutralPos.y - (HeightCm - GameHeightCm) * 0.01f, HmdNeutralPos.z);
+        /// <summary>Head height (m) of the neutral pose, which is how tall you were standing when it was captured.</summary>
+        public static float NeutralHeight => HmdNeutralPos.y;
 
         // ---- cutscene behaviour (preferences) ----
         /// <summary>
@@ -133,7 +129,7 @@ namespace DnWVR.VR
         /// <summary>Tracking-space pose (as reported by the XR input subsystem) to world space.</summary>
         public static void TrackingToWorld(Vector3 localPos, Quaternion localRot, out Vector3 worldPos, out Quaternion worldRot)
         {
-            worldPos = s_wantedCamPos + s_rigRot * (localPos - Neutral);
+            worldPos = s_wantedCamPos + s_rigRot * (localPos - HmdNeutralPos);
             worldRot = s_rigRot * localRot;
         }
 
@@ -289,7 +285,7 @@ namespace DnWVR.VR
             ClampNearClip(Camera);
             var t = Camera.transform;
             t.rotation = s_rigRot * HmdLocalRot;
-            t.position = s_wantedCamPos + s_rigRot * (HmdLocalPos - Neutral);
+            t.position = s_wantedCamPos + s_rigRot * (HmdLocalPos - HmdNeutralPos);
             WriteCount++;
             AfterCameraWrite?.Invoke();
         }

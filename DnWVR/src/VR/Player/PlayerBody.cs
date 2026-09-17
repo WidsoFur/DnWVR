@@ -241,23 +241,23 @@ namespace DnWVR.VR
         {
             float bottom = s_bottomOffset(s_msc) - s_gameRadius;
             float top = s_bottomOffset(s_msc) + s_gameRadius + s_cylinderHeight(s_msc) * s_msc.Posture;
-            top -= Duck();
+            top = HeadTop(bottom, top);
             float height = Mathf.Max(top - bottom, 2f * s_capsule.radius);
             s_capsule.height = height;
             s_capsule.center = new Vector3(s_offset.x, bottom + height * 0.5f, s_offset.z);
         }
 
         /// <summary>
-        /// How far (m) the top of the capsule sits below the body the game gives you, which is how far your own head is below
-        /// the height the game stands at: the calibration puts your eyes where your head really is over the floor, so the two
-        /// are the same measurement. Ducking shortens the body, standing tall never lengthens it past the game's own - a head
-        /// over the collider costs nothing, a body too big for the wash's doorways would cost plenty. The game's own crouch
-        /// still works through Posture, and the two simply add up.
+        /// Where the top of the capsule belongs: at your head, and never above the height you marked, which is measured from
+        /// your feet. Duck in the room and the body ducks with you, so you fit under what you have physically ducked under;
+        /// stand on your toes and it stays at the height you marked. The game's own crouch button works on Posture, which
+        /// this leaves untouched, so physically ducking never puts the character into its crouch.
         /// </summary>
-        static float Duck()
+        static float HeadTop(float bottom, float gameTop)
         {
-            if (!DuckWithHead || !VRRig.HmdTracked) return 0f;
-            return Mathf.Max(0f, VRRig.GameHeightCm * 0.01f - VRRig.HmdLocalPos.y);
+            if (!DuckWithHead || !VRRig.HmdTracked) return gameTop;
+            float head = gameTop - Mathf.Max(0f, VRRig.NeutralHeight - VRRig.HmdLocalPos.y);
+            return Mathf.Min(head, bottom + VRRig.HeightCm * 0.01f);
         }
 
         // Moves the capsule from one root-local offset toward another: it stops a skin's width before anything solid (further

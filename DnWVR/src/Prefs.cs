@@ -91,13 +91,13 @@ namespace DnWVR
                 "Your body (its collider and feet) follows you when you walk around your room, stopping at walls and the dragon. " +
                 "Off = it stays where the stick puts it");
             PlayerHeightCm = PrefStore.Create("PlayerHeightCm", VRRig.GameHeightCm,
-                "How high your eyes are over the floor, in centimetres - the number the VR section of the options " +
-                "screen shows. The game stands you at 180, in the wash and in the sex scenes alike; give it your own " +
-                "and everything is measured from there. The Calibrate button there reads it off the headset");
+                "Your height in centimetres, measured from your feet - the number the VR section of the options screen " +
+                "shows. It does not move the camera: it caps how tall your collider stands, so ducking in the room ducks " +
+                "the body with you. The Calibrate button there reads it off the headset");
             PlayerDuckWithHead = PrefStore.Create("PlayerDuckWithHead", true,
-                "Duck in your room and your body ducks with you: the top of your collider follows your head, so you fit " +
-                "under what you have physically ducked under. Off = the body keeps the height the game gives it and only " +
-                "the crouch button lowers it");
+                "Duck in your room and your body ducks with you: the top of your collider follows your head, capped by " +
+                "PlayerHeightCm, so you fit under what you have physically ducked under. The game's crouch button is a " +
+                "separate thing either way. Off = the body keeps the height the game gives it");
             PlayerRadius = PrefStore.Create("PlayerRadius", 0.2f,
                 "Radius (m) of your body's collider in VR, small enough to stand right next to the dragon (the game's is 0.5; 0 " +
                 "= the game's)");
