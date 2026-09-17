@@ -51,6 +51,7 @@ namespace DnWVR.VR
         static bool s_registered;
         static int s_snapArmed = 1; // 1 = ready, 0 = waiting for stick to return to centre
         static bool s_pausePress;   // one frame of Start, set when X is pressed and the game is not already paused
+        static int s_pauseCheck;
 
         static AccessTools.FieldRef<MenuManager> s_menuManager;
         static AccessTools.FieldRef<MenuManager, Menu> s_currentMenu;
@@ -241,8 +242,12 @@ namespace DnWVR.VR
             if (xDown && !SuppressGameInput && !TryResumeFromPause())
             {
                 s_pausePress = true;
-                LogI("[VRInput] X -> pause");
+                s_pauseCheck = 3;
+                Log.Msg($"[VRInput] X -> pause (menu now: {CurrentMenuName()})");
             }
+            // Diagnostic while the pause button is under investigation: says whether the game took the press.
+            if (s_pauseCheck > 0 && --s_pauseCheck == 0)
+                Log.Msg($"[VRInput] two frames after the press the menu is {CurrentMenuName()}");
             s_xWas = Left.Primary;
             // Diagnostic: the left menu button doubles as the SteamVR system button and is not fed to the game.
             if (Left.Menu && !s_menuWas) Log.Msg("[VRInput] left menu/system button seen by app (ignored)");
@@ -317,6 +322,22 @@ namespace DnWVR.VR
 
         // Sends the "Resume" intent the pause menu's button sends. Checked by component type, as the StartScene main
         // menu (MenuMain) must not receive it.
+        /// <summary>The menu the game believes is open, for the log.</summary>
+        static string CurrentMenuName()
+        {
+            try
+            {
+                if (s_menuManager == null || s_currentMenu == null) return "unreadable";
+                var manager = s_menuManager();
+                var menu = manager != null ? s_currentMenu(manager) : null;
+                return menu != null ? menu.GetType().Name : "none";
+            }
+            catch
+            {
+                return "unreadable";
+            }
+        }
+
         static bool TryResumeFromPause()
         {
             if (s_menuManager == null || s_currentMenu == null) return false;
