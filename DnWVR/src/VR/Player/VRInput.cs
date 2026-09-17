@@ -84,24 +84,34 @@ namespace DnWVR.VR
         public static void RebindGameActions()
         {
             if (Pad == null) return;
+            var seen = new HashSet<InputActionAsset>();
+            InputActionAsset runtime = null;
             try
             {
-                var asset = MenuManager.actions != null ? MenuManager.actions.asset : null;
-                if (asset == null) return;
-                foreach (var map in asset.actionMaps)
-                {
-                    if (!map.enabled) continue;
-                    map.Disable();
-                    map.Enable();
-                }
-                if (!Listens(asset)) BindPadByName(asset);
-                if (Listens(asset)) Log.Msg("[VRInput] the game's actions now listen to the controllers");
-                else Log.Warning("[VRInput] the game's Move action still does not listen to the virtual pad");
+                runtime = MenuManager.actions != null ? MenuManager.actions.asset : null;
+                if (runtime != null && seen.Add(runtime)) BindPadByName(runtime, "MenuManager.actions");
             }
             catch (Exception e)
             {
-                Log.Warning("[VRInput] could not refresh the game's actions: " + e.Message);
+                Log.Warning("[VRInput] MenuManager.actions unavailable: " + e.Message);
             }
+            // The wrapper the gameplay reads is a clone of the serialized asset, while MenuIntents (the pause button) and
+            // the UI input module listen to the asset itself - so every one of them has to learn about the pad.
+            try
+            {
+                foreach (var asset in Resources.FindObjectsOfTypeAll<InputActionAsset>())
+                {
+                    if (asset == null || !seen.Add(asset)) continue;
+                    BindPadByName(asset, "asset:" + asset.name);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[VRInput] could not sweep the action assets: " + e.Message);
+            }
+            if (runtime == null) return;
+            if (Listens(runtime)) Log.Msg("[VRInput] the game's actions now listen to the controllers");
+            else Log.Warning("[VRInput] the game's Move action still does not listen to the virtual pad");
         }
 
         /// <summary>Whether the game's movement action has the virtual pad among the controls it listens to.</summary>
@@ -119,7 +129,7 @@ namespace DnWVR.VR
         /// to cover any gamepad including this one, and for reasons that belong to the Input System it does not - so every
         /// gamepad binding is copied onto "&lt;DnWVRGamepad&gt;" as well. A binding can only be added while its map is off.
         /// </summary>
-        static void BindPadByName(InputActionAsset asset)
+        static void BindPadByName(InputActionAsset asset, string where)
         {
             const string generic = "<Gamepad>";
             string own = "<" + Pad.layout + ">";
@@ -139,13 +149,13 @@ namespace DnWVR.VR
                         wanted.Add(new KeyValuePair<InputAction, string>(action, own + binding.effectivePath.Substring(generic.Length)));
                     }
                 }
-                if (wanted.Count == 0) continue;
                 bool was = map.enabled;
-                map.Disable();
+                if (wanted.Count > 0 || was) map.Disable();
                 foreach (var pair in wanted)
                     pair.Key.AddBinding(pair.Value);
                 if (was) map.Enable();
-                Log.Msg($"[VRInput] {map.name}: {wanted.Count} controller bindings pointed at the pad by name");
+                if (wanted.Count == 0) continue;
+                Log.Msg($"[VRInput] {where} {map.name}: {wanted.Count} controller bindings pointed at the pad by name");
             }
         }
 
