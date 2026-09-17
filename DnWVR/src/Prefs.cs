@@ -201,6 +201,7 @@ namespace DnWVR
                 "Re-sample the headset pose right before rendering (lowest latency; turn off only to compare)");
             DebugInteractionLog = PrefStore.Create("DebugInteractionLog", false,
                 "Debug: log cutscene action changes, pause/resume buttons and hand/item interaction decisions");
+            PrefStore.Save();
         }
 
         /// <summary>Re-reads the settings file (F6), so an edit made while playing takes hold.</summary>
