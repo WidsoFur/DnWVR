@@ -1,6 +1,4 @@
-# DnWVR
-
-**A VR mod for [Drag'n Wash](https://store.steampowered.com/app/4739660/).**
+# DnWVR - A VR mod for [Drag'n Wash](https://store.steampowered.com/app/4739660/).
 
 The game was made flat. This mod puts you inside it: stereo rendering through OpenXR, your own head, and the game's
 paws on your hands. You wash the dragons with your arms, pick up the sponge by pointing at it, and the game's menus
