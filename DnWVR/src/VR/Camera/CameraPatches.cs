@@ -16,6 +16,7 @@ namespace DnWVR.VR
 
         static AccessTools.FieldRef<LookController, Vector2> s_smoothedLook;
         static AccessTools.FieldRef<LookController, Vector2> s_smoothingVelocity;
+        static AccessTools.FieldRef<LookController, float> s_capsuleSmoothdamp, s_viewTopDistance;
         static bool s_loggedLookAtSkip;
         static bool s_loggedLookFromToSkip;
 
@@ -23,9 +24,12 @@ namespace DnWVR.VR
         {
             s_smoothedLook = AccessTools.FieldRefAccess<LookController, Vector2>("smoothedLook");
             s_smoothingVelocity = AccessTools.FieldRefAccess<LookController, Vector2>("smoothingVelocity");
+            s_capsuleSmoothdamp = AccessTools.FieldRefAccess<LookController, float>("capsuleSmoothdamp");
+            s_viewTopDistance = AccessTools.FieldRefAccess<LookController, float>("viewTopDistance");
 
             Patch(harmony, typeof(OrbitCameraData), "ApplyTo", prefix: nameof(ApplyTo_Prefix));
-            Patch(harmony, typeof(LookController), "LateUpdate", prefix: nameof(LookLateUpdate_Prefix));
+            Patch(harmony, typeof(LookController), "LateUpdate",
+                prefix: nameof(LookLateUpdate_Prefix), postfix: nameof(LookLateUpdate_Postfix));
             Patch(harmony, typeof(LookController), "AddLookRotation", prefix: nameof(SkipWhenVR));
             Patch(harmony, typeof(OrbitCameraShake), "ApplyShake", prefix: nameof(SkipWhenVR));
             Patch(harmony, typeof(ArbitraryCut), "Update", prefix: nameof(SkipWhenVR));
@@ -93,6 +97,15 @@ namespace DnWVR.VR
         }
 
         // ---- LookController.LateUpdate: mirror the HMD into the look state ------------------
+
+        // The game hangs the head off the top of the capsule, so a body shortened to follow the player's own head would
+        // lower the eyes by the duck - and the headset then lowers them again by the same amount, moving the view at twice
+        // the head's speed. The head stays at the standing top instead; the game's own crouch is in that number already.
+        static void LookLateUpdate_Postfix(LookController __instance)
+        {
+            if (!VRRig.Active || !PlayerBody.Attached || s_capsuleSmoothdamp == null || s_viewTopDistance == null) return;
+            s_capsuleSmoothdamp(__instance) = PlayerBody.StandingTop - s_viewTopDistance(__instance);
+        }
 
         static void LookLateUpdate_Prefix(LookController __instance)
         {

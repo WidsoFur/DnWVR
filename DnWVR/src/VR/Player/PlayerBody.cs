@@ -91,6 +91,12 @@ namespace DnWVR.VR
         /// <summary>The scene's player body has been taken over.</summary>
         public static bool Attached => s_msc != null;
 
+        /// <summary>
+        /// Root-local top of the capsule as the game itself would size it, before the head ducks it. The game hangs its
+        /// head position off the capsule's top, so this is the height the eyes belong at; see CameraPatches.
+        /// </summary>
+        public static float StandingTop { get; private set; }
+
         public static void Install(HarmonyLib.Harmony harmony)
         {
             s_bottomOffset = AccessTools.FieldRefAccess<MassSpringController, float>("defaultBottomOffset");
@@ -240,24 +246,25 @@ namespace DnWVR.VR
         static void FitCapsule()
         {
             float bottom = s_bottomOffset(s_msc) - s_gameRadius;
-            float top = s_bottomOffset(s_msc) + s_gameRadius + s_cylinderHeight(s_msc) * s_msc.Posture;
-            top = HeadTop(bottom, top);
+            StandingTop = s_bottomOffset(s_msc) + s_gameRadius + s_cylinderHeight(s_msc) * s_msc.Posture;
+            float top = HeadTop(bottom, StandingTop);
             float height = Mathf.Max(top - bottom, 2f * s_capsule.radius);
             s_capsule.height = height;
             s_capsule.center = new Vector3(s_offset.x, bottom + height * 0.5f, s_offset.z);
         }
 
         /// <summary>
-        /// Where the top of the capsule belongs: at your head, and never above the height you marked, which is measured from
-        /// your feet. Duck in the room and the body ducks with you, so you fit under what you have physically ducked under;
-        /// stand on your toes and it stays at the height you marked. The game's own crouch button works on Posture, which
-        /// this leaves untouched, so physically ducking never puts the character into its crouch.
+        /// Where the top of the capsule belongs: at your head, and never above the height you marked. Both are measured
+        /// from your feet, and the headset measures itself - the tracking origin is the floor - so no calibration is in
+        /// the way. Duck in the room and the body ducks with you, so you fit under what you have physically ducked under.
+        /// The game's own crouch is a separate quantity, Posture, which this never writes: ducking in the room does not
+        /// put the character into its crouch, and the crouch button still shortens the body on top of whatever you do.
         /// </summary>
         static float HeadTop(float bottom, float gameTop)
         {
             if (!DuckWithHead || !VRRig.HmdTracked) return gameTop;
-            float head = gameTop - Mathf.Max(0f, VRRig.NeutralHeight - VRRig.HmdLocalPos.y);
-            return Mathf.Min(head, bottom + VRRig.HeightCm * 0.01f);
+            float standing = bottom + Mathf.Min(VRRig.HmdLocalPos.y, VRRig.HeightCm * 0.01f);
+            return standing - s_cylinderHeight(s_msc) * (1f - s_msc.Posture);
         }
 
         // Moves the capsule from one root-local offset toward another: it stops a skin's width before anything solid (further

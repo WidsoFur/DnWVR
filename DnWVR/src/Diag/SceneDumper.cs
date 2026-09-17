@@ -239,6 +239,56 @@ namespace DnWVR.Diag
             foreach (var d in InputSystem.devices)
                 sb.AppendLine($"* {d.displayName} layout={d.layout} id={d.deviceId} enabled={d.enabled} usages=[{string.Join(",", d.usages)}] class={d.description.deviceClass} interface={d.description.interfaceName}");
             sb.AppendLine($"Cursor lock={Cursor.lockState} visible={Cursor.visible}");
+            DumpModInput(sb);
+        }
+
+        /// <summary>
+        /// The whole path the controllers take into the game: what the XR devices read, what the mod put on its virtual
+        /// gamepad, and what the game's own actions make of it. Read with a stick held over, it says which link is broken.
+        /// </summary>
+        static void DumpModInput(StringBuilder sb)
+        {
+            try
+            {
+                sb.AppendLine($"XR read: L valid={VR.VRInput.Left.Valid} stick={VR.VRInput.Left.Stick} trigger={VR.VRInput.Left.Trigger:0.00} " +
+                              $"grip={VR.VRInput.Left.Grip:0.00} primary={VR.VRInput.Left.Primary} secondary={VR.VRInput.Left.Secondary}");
+                sb.AppendLine($"XR read: R valid={VR.VRInput.Right.Valid} stick={VR.VRInput.Right.Stick} trigger={VR.VRInput.Right.Trigger:0.00} " +
+                              $"grip={VR.VRInput.Right.Grip:0.00} primary={VR.VRInput.Right.Primary} secondary={VR.VRInput.Right.Secondary}");
+                sb.AppendLine($"Mod input: suppressed={VR.VRInput.SuppressGameInput} updateType={UnityEngine.InputSystem.LowLevel.InputState.currentUpdateType}");
+
+                var pad = VR.VRInput.Pad;
+                sb.AppendLine(pad == null
+                    ? "Pad: none"
+                    : $"Pad: added={pad.added} enabled={pad.enabled} leftStick={pad.leftStick.ReadValue()} A={pad.buttonSouth.isPressed} " +
+                      $"B={pad.buttonEast.isPressed} RB={pad.rightShoulder.isPressed} LB={pad.leftShoulder.isPressed} start={pad.startButton.isPressed}");
+                foreach (var g in Gamepad.all)
+                    sb.AppendLine($"  gamepad {g.name} id={g.deviceId} leftStick={g.leftStick.ReadValue()}");
+
+                var actions = MenuManager.actions != null ? MenuManager.actions.asset : null;
+                if (actions == null)
+                {
+                    sb.AppendLine("Game actions: none");
+                    return;
+                }
+                string paired = actions.devices.HasValue ? string.Join(",", actions.devices.Value) : "every device";
+                sb.AppendLine($"Game actions: {actions.name} enabled={actions.enabled} paired={paired} bindingMask={actions.bindingMask}");
+                foreach (var name in new[] { "Player/Move", "Player/Jump", "Player/Crouch", "Player/Attack", "Player/Plap", "Player/Pause" })
+                {
+                    var action = actions.FindAction(name);
+                    if (action == null)
+                    {
+                        sb.AppendLine($"  {name}: not found");
+                        continue;
+                    }
+                    var controls = new List<string>();
+                    foreach (var c in action.controls) controls.Add($"{c.path}@{c.device.deviceId}");
+                    sb.AppendLine($"  {name} enabled={action.enabled} value={action.ReadValueAsObject()} controls=[{string.Join(", ", controls)}]");
+                }
+            }
+            catch (Exception e)
+            {
+                sb.AppendLine("mod input probe failed: " + e.Message);
+            }
         }
 
         static void DumpXR(StringBuilder sb)
