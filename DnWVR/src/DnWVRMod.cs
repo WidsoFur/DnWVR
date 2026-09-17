@@ -38,6 +38,7 @@ namespace DnWVR
         public static MelonPreferences_Entry<bool> PrefDisableFluidFeature;
         public static MelonPreferences_Entry<bool> PrefDialogueCameraZoom, PrefDialogueAutoAdvance,
             PrefDialogueTriggerSkip, PrefUIOnTop;
+        public static MelonPreferences_Entry<float> PrefSpongeReach;
         public static MelonPreferences_Entry<float> PrefDialogueLineSeconds, PrefSexSceneBuildUpSeconds,
             PrefSexSceneFinishHoldSeconds, PrefSexSceneWalkSpeed;
         public static MelonPreferences_Entry<bool> PrefInteractiveSexScenes, PrefSexSceneWalking, PrefDesktopView;
@@ -174,6 +175,9 @@ namespace DnWVR
                 "Walking speed in the sex scenes, m/s at full stick");
             PrefTouchWorldSurfaces = Prefs.CreateEntry("TouchWorldSurfaces", false,
                 "Floors, walls and props give touch sounds and slap effects too (never game events)");
+            PrefSpongeReach = Prefs.CreateEntry("SpongeReach", 0.1f,
+                "How far (m) from the sponge a surface still counts as scrubbed. Bigger reaches further for the same " +
+                "arm, which is what a small room asks for; too big and the sponge washes what it is not touching");
             PrefSpongeNeedsTrigger = Prefs.CreateEntry("SpongeNeedsTrigger", true,
                 "The sponge only scrubs while the trigger is held. Off = it scrubs whatever it touches");
             PrefItemLaser = Prefs.CreateEntry("ItemLaser", true,
@@ -482,6 +486,7 @@ namespace DnWVR
             MenuHands.Enabled = PrefMenuHands.Value;
             HandPatches.PlapSpeed = PrefSlapSpeed.Value;
             HandPatches.PressSpeed = PrefHandPressSpeed.Value;
+            HandPatches.ContactRadius = Mathf.Clamp(PrefSpongeReach.Value, 0.02f, 0.3f);
             HandPatches.StrokeRequiresMotion = PrefStrokeRequiresMotion.Value;
             HandPatches.TouchDuringCutscenes = PrefTouchDuringCutscenes.Value;
             HandPatches.TouchWorldSurfaces = PrefTouchWorldSurfaces.Value;

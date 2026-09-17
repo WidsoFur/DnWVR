@@ -19,7 +19,7 @@ namespace DnWVR.VR
         const int SurfaceMask = 385;   // layers 0, 7, 8: surfaces the game lets hands/sponge touch
         const int HitboxMask = 64;     // layer 6: HitboxTrigger volumes
 
-        public static float ContactRadius = 0.07f;     // m; the sponge's contact probe
+        public static float ContactRadius = 0.1f;      // m; the sponge's contact probe
         public static float PlapSpeed = 1.0f;          // m/s hand speed that counts as a slap
         public static float ContactReleaseTime = 0.15f; // s without contact before the sponge can splat again
 
