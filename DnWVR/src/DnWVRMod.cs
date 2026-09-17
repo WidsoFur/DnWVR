@@ -89,6 +89,7 @@ namespace DnWVR
             XRRenderFixes.Apply(Prefs.SinglePassInstanced.Value);
             VRInput.DisableStockXRBindingsEverywhere();
             VRInput.AddDevice();
+            VRInput.RebindGameActions();
             InputPatches.ForceControllerGlyphs();
             VRHands.EnsureAnchors();
             VRHands.AttachGameHands();
@@ -162,7 +163,13 @@ namespace DnWVR
             if (XRBootstrap.IsRunning)
             {
                 Guarded("XRRenderFixes", () => XRRenderFixes.Apply(Prefs.SinglePassInstanced.Value));
-                Guarded("VRInput", () => { VRInput.DisableStockXRBindingsEverywhere(); VRInput.AddDevice(); });
+                Guarded("VRInput", () =>
+                {
+                    VRInput.DisableStockXRBindingsEverywhere();
+                    VRInput.AddDevice();
+                    // A new scene builds its own action maps, and they resolve without the pad the same way the first ones did.
+                    VRInput.RebindGameActions();
+                });
                 Guarded("InputPatches", InputPatches.ForceControllerGlyphs);
                 Guarded("RenderTweaks", () => RenderTweaks.ApplyToScene());
                 Guarded("VRUI", VRUI.ConvertAll);

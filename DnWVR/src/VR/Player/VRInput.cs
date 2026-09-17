@@ -73,6 +73,39 @@ namespace DnWVR.VR
             }
         }
 
+        /// <summary>
+        /// Makes the game's own actions notice the virtual pad. An action resolves which controls it listens to when its
+        /// map is enabled, and the game built and enabled its maps long before VR started, so the pad - added only once
+        /// OpenXR is up - is missing from every one of them: the stick is fed to a device nothing listens to. Turning a
+        /// map off and on again is what asks the Input System to look at the devices afresh.
+        /// </summary>
+        public static void RebindGameActions()
+        {
+            if (Pad == null) return;
+            try
+            {
+                var asset = MenuManager.actions != null ? MenuManager.actions.asset : null;
+                if (asset == null) return;
+                foreach (var map in asset.actionMaps)
+                {
+                    if (!map.enabled) continue;
+                    map.Disable();
+                    map.Enable();
+                }
+                var move = asset.FindAction("Player/Move");
+                bool listens = false;
+                if (move != null)
+                    foreach (var control in move.controls)
+                        if (control.device == Pad) { listens = true; break; }
+                if (listens) Log.Msg("[VRInput] the game's actions now listen to the controllers");
+                else Log.Warning("[VRInput] the game's Move action still does not listen to the virtual pad");
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[VRInput] could not refresh the game's actions: " + e.Message);
+            }
+        }
+
         public static void AddDevice()
         {
             if (Pad != null) return;
