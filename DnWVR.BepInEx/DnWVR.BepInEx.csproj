@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The same sources as DnWVR.csproj, built against BepInEx instead of MelonLoader. The only files that differ are the
+    four in DnWVR\src\Loader, and which of them a project compiles is decided by the file name alone.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>DnWVR.BepInEx</AssemblyName>
+    <RootNamespace>DnWVR</RootNamespace>
+    <OutputType>Library</OutputType>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DeployDir>$(GameDir)\BepInEx\plugins\DnWVR</DeployDir>
+    <!-- Building for a loader nobody has installed is fine; scattering its files into the game is not -->
+    <DeployGate>$(GameDir)\BepInEx\core</DeployGate>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\DnWVR\src\**\*.cs" Exclude="..\DnWVR\src\Loader\Melon*.cs" LinkBase="src" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Game.props" />
+
+  <ItemGroup>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExDir)\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExDir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckBepInEx" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(BepInExDir)\BepInEx.dll')" Text="BepInEx assemblies not found in '$(BepInExDir)'. They ship in refs\ - see refs\README.md." />
+  </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Deploy.targets" />
+
+</Project>

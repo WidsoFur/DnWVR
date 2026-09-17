@@ -11,6 +11,11 @@
     <DeployDir>$(GameDir)\Mods</DeployDir>
   </PropertyGroup>
 
+  <!-- The BepInEx half of src\Loader belongs to the other project -->
+  <ItemGroup>
+    <Compile Remove="src\Loader\BepInEx*.cs" />
+  </ItemGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)..\build\Game.props" />
 
   <!-- MelonLoader -->

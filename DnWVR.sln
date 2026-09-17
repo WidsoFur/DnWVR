@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnWVR", "DnWVR\DnWVR.csproj", "{AD447EA3-0B19-4C60-8A29-95B0D26C9971}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnWVR.BepInEx", "DnWVR.BepInEx\DnWVR.BepInEx.csproj", "{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{AD447EA3-0B19-4C60-8A29-95B0D26C9971}.Release|x64.Build.0 = Release|Any CPU
 		{AD447EA3-0B19-4C60-8A29-95B0D26C9971}.Release|x86.ActiveCfg = Release|Any CPU
 		{AD447EA3-0B19-4C60-8A29-95B0D26C9971}.Release|x86.Build.0 = Release|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Debug|x64.Build.0 = Debug|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Debug|x86.Build.0 = Debug|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Release|x64.ActiveCfg = Release|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Release|x64.Build.0 = Release|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Release|x86.ActiveCfg = Release|Any CPU
+		{FA717D80-56C1-4AF8-BDFE-6EB11C2DF6AA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

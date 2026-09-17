@@ -9,6 +9,9 @@
     <GameDataDir>$(GameDir)\DragNWash_Data</GameDataDir>
     <ManagedDir>$(GameDataDir)\Managed</ManagedDir>
     <MelonDir>$(GameDir)\MelonLoader\net35</MelonDir>
+    <!-- BepInEx is not on NuGet, so it is compiled against out of refs\ unless the game has it installed -->
+    <BepInExDir Condition="'$(BepInExDir)' == '' And Exists('$(GameDir)\BepInEx\core\BepInEx.dll')">$(GameDir)\BepInEx\core</BepInExDir>
+    <BepInExDir Condition="'$(BepInExDir)' == ''">$(MSBuildThisFileDirectory)refs\bepinex5</BepInExDir>
     <!-- Unity XR assemblies: the provider in this repository (openxr\), else the copies a release installed into the game -->
     <XRProviderDir>$(MSBuildThisFileDirectory)openxr</XRProviderDir>
     <XRManagedDir Condition="'$(XRManagedDir)' == '' And Exists('$(XRProviderDir)\Managed\Unity.XR.OpenXR.dll')">$(XRProviderDir)\Managed</XRManagedDir>
