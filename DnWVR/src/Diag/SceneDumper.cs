@@ -264,6 +264,14 @@ namespace DnWVR.Diag
                 foreach (var g in Gamepad.all)
                     sb.AppendLine($"  gamepad {g.name} id={g.deviceId} leftStick={g.leftStick.ReadValue()}");
 
+                if (pad != null)
+                {
+                    sb.AppendLine($"Pad layout: {pad.layout} interface={pad.description.interfaceName} " +
+                                  $"matches <Gamepad>/leftStick={UnityEngine.InputSystem.InputControlPath.Matches("<Gamepad>/leftStick", pad.leftStick)} " +
+                                  $"matches <{pad.layout}>/leftStick={UnityEngine.InputSystem.InputControlPath.Matches("<" + pad.layout + ">/leftStick", pad.leftStick)}");
+                    sb.AppendLine($"Supported devices: [{string.Join(", ", InputSystem.settings.supportedDevices)}]");
+                }
+
                 var actions = MenuManager.actions != null ? MenuManager.actions.asset : null;
                 if (actions == null)
                 {
@@ -283,6 +291,9 @@ namespace DnWVR.Diag
                     var controls = new List<string>();
                     foreach (var c in action.controls) controls.Add($"{c.path}@{c.device.deviceId}");
                     sb.AppendLine($"  {name} enabled={action.enabled} value={action.ReadValueAsObject()} controls=[{string.Join(", ", controls)}]");
+                    var paths = new List<string>();
+                    foreach (var binding in action.bindings) paths.Add(binding.effectivePath ?? "<none>");
+                    sb.AppendLine($"    bindings=[{string.Join(", ", paths)}]");
                 }
             }
             catch (Exception e)

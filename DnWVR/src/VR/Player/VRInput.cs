@@ -92,17 +92,58 @@ namespace DnWVR.VR
                     map.Disable();
                     map.Enable();
                 }
-                var move = asset.FindAction("Player/Move");
-                bool listens = false;
-                if (move != null)
-                    foreach (var control in move.controls)
-                        if (control.device == Pad) { listens = true; break; }
-                if (listens) Log.Msg("[VRInput] the game's actions now listen to the controllers");
+                if (!Listens(asset)) BindPadByName(asset);
+                if (Listens(asset)) Log.Msg("[VRInput] the game's actions now listen to the controllers");
                 else Log.Warning("[VRInput] the game's Move action still does not listen to the virtual pad");
             }
             catch (Exception e)
             {
                 Log.Warning("[VRInput] could not refresh the game's actions: " + e.Message);
+            }
+        }
+
+        /// <summary>Whether the game's movement action has the virtual pad among the controls it listens to.</summary>
+        static bool Listens(InputActionAsset asset)
+        {
+            var move = asset.FindAction("Player/Move");
+            if (move == null) return false;
+            foreach (var control in move.controls)
+                if (control.device == Pad) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Binds the pad to the game's actions by its own layout name. The game binds the generic "&lt;Gamepad&gt;", which ought
+        /// to cover any gamepad including this one, and for reasons that belong to the Input System it does not - so every
+        /// gamepad binding is copied onto "&lt;DnWVRGamepad&gt;" as well. A binding can only be added while its map is off.
+        /// </summary>
+        static void BindPadByName(InputActionAsset asset)
+        {
+            const string generic = "<Gamepad>";
+            string own = "<" + Pad.layout + ">";
+            foreach (var map in asset.actionMaps)
+            {
+                var wanted = new List<KeyValuePair<InputAction, string>>();
+                foreach (var action in map.actions)
+                {
+                    bool already = false;
+                    foreach (var binding in action.bindings)
+                        if (binding.effectivePath != null && binding.effectivePath.StartsWith(own)) { already = true; break; }
+                    if (already) continue;
+                    foreach (var binding in action.bindings)
+                    {
+                        if (binding.isComposite || binding.effectivePath == null) continue;
+                        if (!binding.effectivePath.StartsWith(generic)) continue;
+                        wanted.Add(new KeyValuePair<InputAction, string>(action, own + binding.effectivePath.Substring(generic.Length)));
+                    }
+                }
+                if (wanted.Count == 0) continue;
+                bool was = map.enabled;
+                map.Disable();
+                foreach (var pair in wanted)
+                    pair.Key.AddBinding(pair.Value);
+                if (was) map.Enable();
+                Log.Msg($"[VRInput] {map.name}: {wanted.Count} controller bindings pointed at the pad by name");
             }
         }
 
