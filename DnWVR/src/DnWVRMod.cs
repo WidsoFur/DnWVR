@@ -29,6 +29,7 @@ namespace DnWVR
         public static MelonPreferences_Entry<string> PrefPlapperOffsetPos, PrefPlapperOffsetEuler,
             PrefToolOffsetPos, PrefToolOffsetEuler, PrefSprayerOffsetPos, PrefLadderOffsetPos;
         public static MelonPreferences_Entry<bool> PrefPhysicalHands, PrefRestOnPenis, PrefRoomScaleBody;
+        public static MelonPreferences_Entry<int> PrefPlayerHeightCm;
         public static MelonPreferences_Entry<float> PrefPlayerRadius, PrefPlayerPushSpeed, PrefPlayerStepUp,
             PrefPlayerStepRise, PrefPlayerSpringDamping, PrefPlayerSpringLift;
         public static MelonPreferences_Entry<bool> PrefSecondHand, PrefMenuHands;
@@ -37,7 +38,7 @@ namespace DnWVR
         public static MelonPreferences_Entry<bool> PrefDialogueCameraZoom, PrefDialogueAutoAdvance,
             PrefDialogueTriggerSkip, PrefUIOnTop;
         public static MelonPreferences_Entry<float> PrefDialogueLineSeconds, PrefSexSceneBuildUpSeconds,
-            PrefSexSceneFinishHoldSeconds, PrefSexSceneWalkSpeed, PrefSexSceneEyeHeight;
+            PrefSexSceneFinishHoldSeconds, PrefSexSceneWalkSpeed;
         public static MelonPreferences_Entry<bool> PrefInteractiveSexScenes, PrefSexSceneWalking, PrefDesktopView;
         public static MelonPreferences_Entry<float> PrefDesktopViewFov, PrefDesktopViewSmoothing;
         public static MelonPreferences_Entry<int> PrefDesktopViewHeight;
@@ -115,6 +116,10 @@ namespace DnWVR
             PrefRoomScaleBody = Prefs.CreateEntry("RoomScaleBody", true,
                 "Your body (its collider and feet) follows you when you walk around your room, stopping at walls and the dragon. " +
                 "Off = it stays where the stick puts it");
+            PrefPlayerHeightCm = Prefs.CreateEntry("PlayerHeightCm", VRRig.GameHeightCm,
+                "How high your eyes are over the floor, in centimetres - the number the VR section of the options " +
+                "screen shows. The game stands you at 180, in the wash and in the sex scenes alike; give it your own " +
+                "and everything is measured from there. The Calibrate button there reads it off the headset");
             PrefPlayerRadius = Prefs.CreateEntry("PlayerRadius", 0.2f,
                 "Radius (m) of your body's collider in VR, small enough to stand right next to the dragon (the game's is 0.5; 0 " +
                 "= the game's)");
@@ -162,9 +167,6 @@ namespace DnWVR
                 "Alexander's scene you stand from the start");
             PrefSexSceneWalkSpeed = Prefs.CreateEntry("SexSceneWalkSpeed", 1.5f,
                 "Walking speed in the sex scenes, m/s at full stick");
-            PrefSexSceneEyeHeight = Prefs.CreateEntry("SexSceneEyeHeight", 1.8f,
-                "Eye height over the floor while standing in the sex scenes, m (the wash's is 1.8; raise it to reach a big " +
-                "dragon)");
             PrefTouchWorldSurfaces = Prefs.CreateEntry("TouchWorldSurfaces", false,
                 "Floors, walls and props give touch sounds and slap effects too (never game events)");
             PrefSpongeNeedsTrigger = Prefs.CreateEntry("SpongeNeedsTrigger", true,
@@ -280,6 +282,7 @@ namespace DnWVR
             VRLaser.Ensure(LoggerInstance);
             ItemLaser.Ensure(LoggerInstance);
             MenuHands.Ensure(LoggerInstance);
+            VRSettings.Ensure(LoggerInstance);
             RenderTweaks.ApplyToScene(LoggerInstance);
             VRUI.ConvertAll();
             MelonCoroutines.Start(StereoDiagnosticsAfterDelay());
@@ -462,6 +465,7 @@ namespace DnWVR
             VRHands.PhysicalHands = PrefPhysicalHands.Value;
             VRHands.SecondHand = PrefSecondHand.Value;
             VRHands.RestOnPenis = PrefRestOnPenis.Value;
+            VRRig.HeightCm = Mathf.Clamp(PrefPlayerHeightCm.Value, VRSettings.MinHeightCm, VRSettings.MaxHeightCm);
             PlayerBody.RoomScale = PrefRoomScaleBody.Value;
             PlayerBody.Radius = PrefPlayerRadius.Value;
             PlayerBody.PushSpeed = PrefPlayerPushSpeed.Value;
@@ -493,7 +497,6 @@ namespace DnWVR
             FinishHold.HoldSeconds = PrefSexSceneFinishHoldSeconds.Value;
             SceneWalk.Enabled = PrefSexSceneWalking.Value;
             SceneWalk.Speed = PrefSexSceneWalkSpeed.Value;
-            SceneWalk.EyeHeight = Mathf.Clamp(PrefSexSceneEyeHeight.Value, 0.5f, 4f);
             DialogueVR.AutoAdvance = PrefDialogueAutoAdvance.Value;
             DialogueVR.LineSeconds = PrefDialogueLineSeconds.Value;
             DialogueVR.SkipLines = PrefDialogueTriggerSkip.Value;

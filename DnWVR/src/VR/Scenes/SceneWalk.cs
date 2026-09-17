@@ -15,8 +15,11 @@ namespace DnWVR.VR
         public static bool Enabled = true;
         /// <summary>Walking speed (m/s) at full stick.</summary>
         public static float Speed = 1.5f;
-        /// <summary>Eye height (m) over the floor while standing; the wash's is 1.8.</summary>
-        public static float EyeHeight = 1.8f;
+        /// <summary>
+        /// Eye height (m) over the floor while standing, which is the wash's own. Your height is not in here: the
+        /// calibration in <see cref="VRRig"/> lifts the head above this, the same as it does in the wash.
+        /// </summary>
+        static float EyeHeight => VRRig.GameHeightCm * 0.01f;
 
         const float StepHeight = 0.35f;     // floor rises the walk climbs; anything higher is an obstacle
         const float BodyRadius = 0.25f;

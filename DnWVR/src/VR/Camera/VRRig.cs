@@ -23,6 +23,23 @@ namespace DnWVR.VR
         /// <summary>HMD position (tracking space) that maps onto the game's head position.</summary>
         public static Vector3 HmdNeutralPos;
 
+        /// <summary>
+        /// How high the game itself holds your eyes over the floor, in centimetres - in the wash and, through
+        /// <see cref="SceneWalk"/>, in the sex scenes. At this height the camera is exactly the game's own.
+        /// </summary>
+        public const int GameHeightCm = 180;
+
+        /// <summary>
+        /// How high your own eyes are over the floor, in centimetres, from the VR section of the options screen. Above
+        /// the game's height your eyes rise over the character's, below it they drop: the neutral head point moves the
+        /// other way by the difference, which lifts the hands with the head, both being placed through this conversion.
+        /// </summary>
+        public static int HeightCm = GameHeightCm;
+
+        /// <summary>Neutral head point with the height calibration folded in.</summary>
+        static Vector3 Neutral =>
+            new Vector3(HmdNeutralPos.x, HmdNeutralPos.y - (HeightCm - GameHeightCm) * 0.01f, HmdNeutralPos.z);
+
         // ---- cutscene behaviour (preferences) ----
         /// <summary>
         /// Let dialogue &lt;&lt;LookAt&gt;&gt; and &lt;&lt;LookFromTo&gt;&gt; (window intros) move the camera like the flat game.
@@ -116,7 +133,7 @@ namespace DnWVR.VR
         /// <summary>Tracking-space pose (as reported by the XR input subsystem) to world space.</summary>
         public static void TrackingToWorld(Vector3 localPos, Quaternion localRot, out Vector3 worldPos, out Quaternion worldRot)
         {
-            worldPos = s_wantedCamPos + s_rigRot * (localPos - HmdNeutralPos);
+            worldPos = s_wantedCamPos + s_rigRot * (localPos - Neutral);
             worldRot = s_rigRot * localRot;
         }
 
@@ -272,7 +289,7 @@ namespace DnWVR.VR
             ClampNearClip(Camera);
             var t = Camera.transform;
             t.rotation = s_rigRot * HmdLocalRot;
-            t.position = s_wantedCamPos + s_rigRot * (HmdLocalPos - HmdNeutralPos);
+            t.position = s_wantedCamPos + s_rigRot * (HmdLocalPos - Neutral);
             WriteCount++;
             AfterCameraWrite?.Invoke();
         }
