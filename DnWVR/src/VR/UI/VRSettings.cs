@@ -167,14 +167,14 @@ namespace DnWVR.VR
         void SetHeight(int cm)
         {
             VRRig.HeightCm = Mathf.Clamp(cm, MinHeightCm, MaxHeightCm);
-            Save(DnWVRMod.PrefPlayerHeightCm, VRRig.HeightCm);
+            Save(Prefs.PlayerHeightCm, VRRig.HeightCm);
             Refresh();
         }
 
         void SetSmoothTurn(bool smooth)
         {
             VRInput.SmoothTurn = smooth;
-            Save(DnWVRMod.PrefSmoothTurn, smooth);
+            Save(Prefs.SmoothTurn, smooth);
             Refresh();
         }
 
@@ -183,12 +183,12 @@ namespace DnWVR.VR
             if (VRInput.SmoothTurn)
             {
                 VRInput.SmoothTurnDegPerSec = Mathf.Clamp(value, MinTurnSpeed, MaxTurnSpeed);
-                Save(DnWVRMod.PrefSmoothTurnSpeed, VRInput.SmoothTurnDegPerSec);
+                Save(Prefs.SmoothTurnSpeed, VRInput.SmoothTurnDegPerSec);
             }
             else
             {
                 VRInput.SnapTurnDegrees = Mathf.Clamp(value, MinSnap, MaxSnap);
-                Save(DnWVRMod.PrefSnapTurnDegrees, VRInput.SnapTurnDegrees);
+                Save(Prefs.SnapTurnDegrees, VRInput.SnapTurnDegrees);
             }
             Refresh();
         }
@@ -212,11 +212,11 @@ namespace DnWVR.VR
             if (field != null) field.SetTextWithoutNotify(text);
         }
 
-        static void Save<T>(MelonPreferences_Entry<T> entry, T value)
+        static void Save<T>(Pref<T> entry, T value)
         {
             if (entry == null) return;
             entry.Value = value;
-            try { MelonPreferences.Save(); }
+            try { Prefs.Save(); }
             catch (Exception e) { Log.Warning("[VRSettings] could not save a setting: " + e.Message); }
         }
 

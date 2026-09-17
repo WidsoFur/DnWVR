@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -18,9 +17,9 @@ namespace DnWVR.VR
         const BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
         const int LeftEyeMode = XRMirrorViewBlitMode.LeftEye;
 
-        static MelonPreferences_Entry<bool> s_prefEnabled;
-        static MelonPreferences_Entry<bool> s_prefFlipX;
-        static MelonPreferences_Entry<bool> s_prefFlipY;
+        static Pref<bool> s_prefEnabled;
+        static Pref<bool> s_prefFlipX;
+        static Pref<bool> s_prefFlipY;
 
         static RenderTexture s_rt;
         static string s_path = "";
@@ -36,12 +35,11 @@ namespace DnWVR.VR
 
         public static void Install(HarmonyLib.Harmony harmony)
         {
-            if (DnWVRMod.Prefs != null)
-            {
-                s_prefEnabled = DnWVRMod.Prefs.CreateEntry("DesktopMirror", true, "Show the VR view in the desktop window");
-                s_prefFlipX = DnWVRMod.Prefs.CreateEntry("DesktopMirrorFlipHorizontal", false, "Mirror the desktop preview left to right (if it reads mirrored)");
-                s_prefFlipY = DnWVRMod.Prefs.CreateEntry("DesktopMirrorFlipY", false, "Flip the desktop preview vertically (if it shows upside down)");
-            }
+            s_prefEnabled = PrefStore.Create("DesktopMirror", true, "Show the VR view in the desktop window");
+            s_prefFlipX = PrefStore.Create("DesktopMirrorFlipHorizontal", false,
+                "Mirror the desktop preview left to right (if it reads mirrored)");
+            s_prefFlipY = PrefStore.Create("DesktopMirrorFlipY", false,
+                "Flip the desktop preview vertically (if it shows upside down)");
             var type = AccessTools.TypeByName("UnityEngine.Experimental.Rendering.XRMirrorView");
             var method = type != null ? AccessTools.Method(type, "RenderMirrorView") : null;
             if (method == null)

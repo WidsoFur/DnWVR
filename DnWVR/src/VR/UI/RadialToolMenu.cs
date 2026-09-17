@@ -90,7 +90,7 @@ namespace DnWVR.VR
 
         void Update()
         {
-            if (!VRRig.Active || !DnWVRMod.PrefDebugRadialMenu.Value)
+            if (!VRRig.Active || !Prefs.DebugRadialMenu.Value)
             {
                 if (_open) Close(false);
                 return;

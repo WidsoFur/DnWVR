@@ -229,7 +229,7 @@ namespace DnWVR.VR
         void Update()
         {
             // With the radial tool menu on, Y stays its button.
-            bool usable = VRRig.Active && DnWVRMod.PrefDebugSceneMenu.Value && !DnWVRMod.PrefDebugRadialMenu.Value;
+            bool usable = VRRig.Active && Prefs.DebugSceneMenu.Value && !Prefs.DebugRadialMenu.Value;
             bool button = usable && VRInput.Left.Valid && VRInput.Left.Secondary;
             if (!usable && _open) Close();
             if (button && !_wasButton)
