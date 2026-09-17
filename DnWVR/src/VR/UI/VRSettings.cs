@@ -18,6 +18,9 @@ namespace DnWVR.VR
         /// <summary>Range the height row allows, in centimetres.</summary>
         public const int MinHeightCm = 120, MaxHeightCm = 220;
 
+        /// <summary>Range the camera lift row allows, in centimetres.</summary>
+        public const int MinLiftCm = -50, MaxLiftCm = 100;
+
         /// <summary>How much bigger the options screen's text is in VR than the flat game's, and its colour.</summary>
         public static float FontScale = 1.35f;
 
@@ -28,6 +31,10 @@ namespace DnWVR.VR
         const string HeightRowName = "DnWVR_HeightRow";
         const string TurnRowName = "DnWVR_TurnRow";
         const string TurnAmountRowName = "DnWVR_TurnAmountRow";
+        const string LiftRowName = "DnWVR_LiftRow";
+
+        // The section's own rows, in the order they belong in, which is also how it checks it is still at the bottom.
+        static readonly string[] s_ours = { TitleName, HeightRowName, LiftRowName, TurnRowName, TurnAmountRowName };
 
         public static VRSettings Instance { get; private set; }
 
@@ -38,7 +45,7 @@ namespace DnWVR.VR
         static readonly Dictionary<int, float> s_sizes = new Dictionary<int, float>();
 
         ScriptableSettingSpawner _spawner;
-        TMP_InputField _height, _turnMode, _turnAmount;
+        TMP_InputField _height, _lift, _turnMode, _turnAmount;
         TextMeshProUGUI _turnAmountLabel;
         int _sweep;
         int _rows = -1;
@@ -87,10 +94,9 @@ namespace DnWVR.VR
                 return;
             }
             // The game respawns its own rows when the language changes; ours belong under them either way.
-            if (title.GetSiblingIndex() < content.childCount - 4)
+            if (title.GetSiblingIndex() < content.childCount - s_ours.Length)
             {
-                title.SetAsLastSibling();
-                foreach (var name in new[] { HeightRowName, TurnRowName, TurnAmountRowName })
+                foreach (var name in s_ours)
                 {
                     var row = content.Find(name);
                     if (row != null) row.SetAsLastSibling();
@@ -154,6 +160,7 @@ namespace DnWVR.VR
                 SetLabel(title, "VR");
 
                 BuildHeightRow(NewRow(content, HeightRowName, "Height (cm)"));
+                BuildLiftRow(NewRow(content, LiftRowName, "Camera lift (cm)"));
                 BuildTurnRow(NewRow(content, TurnRowName, "Turning"));
                 BuildTurnAmountRow(NewRow(content, TurnAmountRowName, string.Empty));
                 Refresh();
@@ -186,6 +193,13 @@ namespace DnWVR.VR
             Stepper(row, () => SetHeight(VRRig.HeightCm - 1), () => SetHeight(VRRig.HeightCm + 1));
             MakeButton((RectTransform)row.transform, "Calibrate", "Calibrate", Style(row), 0.72f, 1f)
                 .onClick.AddListener(Calibrate);
+        }
+
+        /// <summary>Raises the view without touching the body, for standing taller than the character does.</summary>
+        void BuildLiftRow(GameObject row)
+        {
+            _lift = Number(row, 4, text => SetLift(int.TryParse(text, out int cm) ? cm : VRRig.CameraLiftCm));
+            Stepper(row, () => SetLift(VRRig.CameraLiftCm - 1), () => SetLift(VRRig.CameraLiftCm + 1));
         }
 
         /// <summary>Snap turning or smooth; the row under it follows whichever is chosen.</summary>
@@ -225,6 +239,13 @@ namespace DnWVR.VR
             Refresh();
         }
 
+        void SetLift(int cm)
+        {
+            VRRig.CameraLiftCm = Mathf.Clamp(cm, MinLiftCm, MaxLiftCm);
+            Save(Prefs.CameraLiftCm, VRRig.CameraLiftCm);
+            Refresh();
+        }
+
         void SetSmoothTurn(bool smooth)
         {
             VRInput.SmoothTurn = smooth;
@@ -255,6 +276,7 @@ namespace DnWVR.VR
         void Refresh()
         {
             Show(_height, VRRig.HeightCm.ToString());
+            Show(_lift, VRRig.CameraLiftCm.ToString());
             Show(_turnMode, VRInput.SmoothTurn ? "Smooth" : "Snap");
             Show(_turnAmount, Mathf.RoundToInt(TurnAmount()).ToString());
             if (_turnAmountLabel != null)

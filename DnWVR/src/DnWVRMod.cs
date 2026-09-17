@@ -295,6 +295,7 @@ namespace DnWVR
             VRHands.SecondHand = Prefs.SecondHand.Value;
             VRHands.RestOnPenis = Prefs.RestOnPenis.Value;
             VRRig.HeightCm = Mathf.Clamp(Prefs.PlayerHeightCm.Value, VRSettings.MinHeightCm, VRSettings.MaxHeightCm);
+            VRRig.CameraLiftCm = Mathf.Clamp(Prefs.CameraLiftCm.Value, VRSettings.MinLiftCm, VRSettings.MaxLiftCm);
             PlayerBody.RoomScale = Prefs.RoomScaleBody.Value;
             PlayerBody.DuckWithHead = Prefs.PlayerDuckWithHead.Value;
             PlayerBody.Radius = Prefs.PlayerRadius.Value;

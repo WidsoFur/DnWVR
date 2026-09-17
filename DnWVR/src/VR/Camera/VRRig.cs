@@ -36,6 +36,17 @@ namespace DnWVR.VR
         /// <summary>Head height (m) of the neutral pose, which is how tall you were standing when it was captured.</summary>
         public static float NeutralHeight => HmdNeutralPos.y;
 
+        /// <summary>
+        /// How far (cm) the rig is lifted above where the game puts the head, which is a way of standing taller in the
+        /// world without touching the body: the collider keeps its own height, and the hands come up with the head so
+        /// that arms still end where hands are.
+        /// </summary>
+        public static int CameraLiftCm;
+
+        /// <summary>The neutral head point with the lift folded in; the rig turns about y, so up is up either way.</summary>
+        static Vector3 Neutral =>
+            new Vector3(HmdNeutralPos.x, HmdNeutralPos.y - CameraLiftCm * 0.01f, HmdNeutralPos.z);
+
         // ---- cutscene behaviour (preferences) ----
         /// <summary>
         /// Let dialogue &lt;&lt;LookAt&gt;&gt; and &lt;&lt;LookFromTo&gt;&gt; (window intros) move the camera like the flat game.
@@ -129,7 +140,7 @@ namespace DnWVR.VR
         /// <summary>Tracking-space pose (as reported by the XR input subsystem) to world space.</summary>
         public static void TrackingToWorld(Vector3 localPos, Quaternion localRot, out Vector3 worldPos, out Quaternion worldRot)
         {
-            worldPos = s_wantedCamPos + s_rigRot * (localPos - HmdNeutralPos);
+            worldPos = s_wantedCamPos + s_rigRot * (localPos - Neutral);
             worldRot = s_rigRot * localRot;
         }
 
@@ -285,7 +296,7 @@ namespace DnWVR.VR
             ClampNearClip(Camera);
             var t = Camera.transform;
             t.rotation = s_rigRot * HmdLocalRot;
-            t.position = s_wantedCamPos + s_rigRot * (HmdLocalPos - HmdNeutralPos);
+            t.position = s_wantedCamPos + s_rigRot * (HmdLocalPos - Neutral);
             WriteCount++;
             AfterCameraWrite?.Invoke();
         }

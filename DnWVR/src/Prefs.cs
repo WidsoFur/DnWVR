@@ -18,7 +18,7 @@ namespace DnWVR
         public static Pref<string> PlapperOffsetPos, PlapperOffsetEuler,
             ToolOffsetPos, ToolOffsetEuler, SprayerOffsetPos, LadderOffsetPos;
         public static Pref<bool> PhysicalHands, RestOnPenis, RoomScaleBody;
-        public static Pref<int> PlayerHeightCm;
+        public static Pref<int> PlayerHeightCm, CameraLiftCm;
         public static Pref<bool> PlayerDuckWithHead;
         public static Pref<float> PlayerRadius, PlayerPushSpeed, PlayerStepUp,
             PlayerStepRise, PlayerSpringDamping, PlayerSpringLift;
@@ -95,6 +95,9 @@ namespace DnWVR
                 "Your height in centimetres, measured from your feet - the number the VR section of the options screen " +
                 "shows. It does not move the camera: it caps how tall your collider stands, so ducking in the room ducks " +
                 "the body with you. The Calibrate button there reads it off the headset");
+            CameraLiftCm = PrefStore.Create("CameraLiftCm", 0,
+                "Lifts your view this many centimetres above where the game puts the head, without touching the body: " +
+                "the collider keeps its height and the hands come up with the eyes. Negative lowers it");
             PlayerDuckWithHead = PrefStore.Create("PlayerDuckWithHead", true,
                 "Duck in your room and your body ducks with you: the top of your collider follows your head, capped by " +
                 "PlayerHeightCm, so you fit under what you have physically ducked under. The game's crouch button is a " +
