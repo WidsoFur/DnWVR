@@ -243,11 +243,25 @@ namespace DnWVR.VR
         // The game sizes the capsule from its radius with a fixed bottom offset, so a slimmer one would lower the top (the eyes
         // follow it) and raise the bottom: refit it to the game's own top and bottom at the current posture, and bring the top
         // down to your own head when you duck under it.
-        static void FitCapsule()
+        /// <summary>
+        /// Stands the capsule back up for the moment the game reads it, and ducks it again afterwards. The game hangs the
+        /// head off the capsule's top and smooths it, so a body that ducks with the player would drag the eyes down and
+        /// the smoothing would chase a target that moves every frame - which is a shake, not a duck. Physics never sees
+        /// this: it runs on the ducked capsule from the fixed step.
+        /// </summary>
+        public static void UseStandingCapsule(bool standing)
+        {
+            if (s_msc == null || s_capsule == null) return;
+            FitCapsule(standing);
+        }
+
+        static void FitCapsule() => FitCapsule(false);
+
+        static void FitCapsule(bool standing)
         {
             float bottom = s_bottomOffset(s_msc) - s_gameRadius;
             StandingTop = s_bottomOffset(s_msc) + s_gameRadius + s_cylinderHeight(s_msc) * s_msc.Posture;
-            float top = HeadTop(bottom, StandingTop);
+            float top = standing ? StandingTop : HeadTop(bottom, StandingTop);
             float height = Mathf.Max(top - bottom, 2f * s_capsule.radius);
             s_capsule.height = height;
             s_capsule.center = new Vector3(s_offset.x, bottom + height * 0.5f, s_offset.z);

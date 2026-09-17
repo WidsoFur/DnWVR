@@ -50,6 +50,7 @@ namespace DnWVR.VR
 
         static bool s_registered;
         static int s_snapArmed = 1; // 1 = ready, 0 = waiting for stick to return to centre
+        static bool s_pausePress;   // one frame of Start, set when X is pressed and the game is not already paused
 
         static AccessTools.FieldRef<MenuManager> s_menuManager;
         static AccessTools.FieldRef<MenuManager, Menu> s_currentMenu;
@@ -181,7 +182,7 @@ namespace DnWVR.VR
         static bool s_leftGripWas, s_rightGripWas;
         // A grip press the item laser claimed stays off Player/Plap until released; the grab itself runs in ItemLaser.Update.
         static bool s_leftGripConsumed, s_rightGripConsumed, s_pendingGrabL, s_pendingGrabR;
-        static bool s_xWas, s_xBlock, s_menuWas;
+        static bool s_xWas, s_menuWas;
 
         /// <summary>
         /// The game takes player input: its Player action map is enabled (menus and StartDialogue dialogues disable it) and
@@ -235,14 +236,13 @@ namespace DnWVR.VR
             // X pauses through the gamepad's Start; in the pause menu it resumes instead. The press that resumed is
             // kept off Start until X is released (Menu.Show also re-registers the pause action a frame late).
             bool xDown = Left.Valid && Left.Primary && !s_xWas;
-            if (xDown && !SuppressGameInput)
+            // A press made while the radial menu is open is the menu's own, and one made in the pause menu resumes
+            // instead: neither reaches the game as a pause.
+            if (xDown && !SuppressGameInput && !TryResumeFromPause())
             {
-                if (TryResumeFromPause()) s_xBlock = true;
-                else LogI("[VRInput] X -> pause");
+                s_pausePress = true;
+                LogI("[VRInput] X -> pause");
             }
-            // A press made while the radial menu is open stays off Start until released, so closing the menu never pauses.
-            else if (xDown) s_xBlock = true;
-            if (!Left.Primary) s_xBlock = false;
             s_xWas = Left.Primary;
             // Diagnostic: the left menu button doubles as the SteamVR system button and is not fed to the game.
             if (Left.Menu && !s_menuWas) Log.Msg("[VRInput] left menu/system button seen by app (ignored)");
@@ -306,7 +306,9 @@ namespace DnWVR.VR
                 if ((Left.GripPressed && !s_leftGripConsumed) || (Right.GripPressed && !s_rightGripConsumed)) buttons |= 1u << (int)GamepadButton.LeftShoulder;
                 if (Right.Primary && !SexScene.InSexScene) buttons |= 1u << (int)GamepadButton.South; // A: Jump / Submit (finishes a sex scene instead: FinishHold)
                 if (Right.Secondary) buttons |= 1u << (int)GamepadButton.East;              // B: Crouch / Cancel
-                if (Left.Primary && !s_xBlock) buttons |= 1u << (int)GamepadButton.Start;    // X: Pause
+                    // The game's pause acts on the button being down rather than on the press, so a held X would open and
+                // shut the menu every frame: it gets a single frame's press.
+                if (s_pausePress) { buttons |= 1u << (int)GamepadButton.Start; s_pausePress = false; }
                 if (Left.StickClick) buttons |= 1u << (int)GamepadButton.LeftStick;
                 s.buttons = buttons;
             }
