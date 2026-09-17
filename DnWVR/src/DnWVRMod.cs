@@ -34,6 +34,9 @@ namespace DnWVR
                     "F9 dump diagnostics, F10 XR descriptors, F11 start/stop OpenXR");
 
             InstallModules();
+            // A module may add settings of its own as it installs (the desktop mirror does), so the file is written
+            // again once they all have.
+            Prefs.Save();
 
             if (Prefs.EnableVR.Value)
                 Host.StartCoroutine(StartXRWhenReady());
