@@ -65,6 +65,7 @@ namespace DnWVR.VR
             }
             var content = _spawner.transform;
             if (!content.gameObject.activeInHierarchy || !s_ready(_spawner)) return;
+            Flatten(content);
 
             var title = content.Find(TitleName);
             if (title == null)
@@ -81,6 +82,24 @@ namespace DnWVR.VR
                     var row = content.Find(name);
                     if (row != null) row.SetAsLastSibling();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Lays the spawned rows back into the panel. The game creates each row at the world origin and parents it with
+        /// the one-argument SetParent, which keeps the row's world pose: on a flat canvas that is invisible, on a canvas
+        /// standing in the room it arrives rotated and metres away. The layout group puts x and y back in line and
+        /// nothing puts back the rotation or the depth, so this does.
+        /// </summary>
+        static void Flatten(Transform content)
+        {
+            for (int i = 0; i < content.childCount; i++)
+            {
+                var row = content.GetChild(i);
+                if (row.localRotation != Quaternion.identity) row.localRotation = Quaternion.identity;
+                if (row.localScale != Vector3.one) row.localScale = Vector3.one;
+                var local = row.localPosition;
+                if (local.z != 0f) row.localPosition = new Vector3(local.x, local.y, 0f);
             }
         }
 
