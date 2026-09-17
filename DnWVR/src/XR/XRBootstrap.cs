@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.XR;
 using UnityEngine.XR.Management;
@@ -36,12 +35,12 @@ namespace DnWVR.XR
             typeof(KHRSimpleControllerProfile),
         };
 
-        public static bool Start(MelonLogger.Instance log, bool singlePassInstanced)
+        public static bool Start(bool singlePassInstanced)
         {
             if (IsRunning) return true;
             try
             {
-                Settings = CreateOpenXRSettings(log, singlePassInstanced);
+                Settings = CreateOpenXRSettings(singlePassInstanced);
 
                 var general = ScriptableObject.CreateInstance<XRGeneralSettings>();
                 general.name = "DnWVR XRGeneralSettings";
@@ -59,15 +58,15 @@ namespace DnWVR.XR
                 registered.Add(loader);
                 if (!manager.TryAddLoader(loader))
                 {
-                    log.Error("XRManagerSettings.TryAddLoader refused the OpenXR loader");
+                    Log.Error("XRManagerSettings.TryAddLoader refused the OpenXR loader");
                     return false;
                 }
 
-                log.Msg($"Initializing OpenXR (gfx={SystemInfo.graphicsDeviceType}, renderMode={Settings.renderMode})...");
+                Log.Msg($"Initializing OpenXR (gfx={SystemInfo.graphicsDeviceType}, renderMode={Settings.renderMode})...");
                 manager.InitializeLoaderSync();
                 if (manager.activeLoader == null)
                 {
-                    log.Error("OpenXR loader failed to initialize. Is the headset connected and an OpenXR runtime active? See Player.log for the OpenXR diagnostic report.");
+                    Log.Error("OpenXR loader failed to initialize. Is the headset connected and an OpenXR runtime active? See Player.log for the OpenXR diagnostic report.");
                     manager.DeinitializeLoader();
                     // Retry attempts must not pile up orphaned settings/feature/loader objects.
                     DestroyRuntimeObjects(Settings, general, manager, loader);
@@ -84,32 +83,32 @@ namespace DnWVR.XR
                 {
                     var modes = input.GetSupportedTrackingOriginModes();
                     bool ok = input.TrySetTrackingOriginMode(TrackingOriginModeFlags.Floor);
-                    log.Msg($"Tracking origin: supported={modes} floor={ok} now={input.GetTrackingOriginMode()}");
+                    Log.Msg($"Tracking origin: supported={modes} floor={ok} now={input.GetTrackingOriginMode()}");
                 }
                 var display = loader.GetLoadedSubsystem<XRDisplaySubsystem>();
-                log.Msg($"OpenXR started: runtime='{OpenXRRuntime.name}' v{OpenXRRuntime.version} api={OpenXRRuntime.apiVersion} plugin={OpenXRRuntime.pluginVersion}; " +
+                Log.Msg($"OpenXR started: runtime='{OpenXRRuntime.name}' v{OpenXRRuntime.version} api={OpenXRRuntime.apiVersion} plugin={OpenXRRuntime.pluginVersion}; " +
                         $"display running={display?.running} eyeTex={XRSettings.eyeTextureWidth}x{XRSettings.eyeTextureHeight} XRSettings.enabled={XRSettings.enabled}");
                 return true;
             }
             catch (Exception e)
             {
-                log.Error("XR bootstrap failed: " + e);
+                Log.Error("XR bootstrap failed: " + e);
                 return false;
             }
         }
 
-        public static void Stop(MelonLogger.Instance log)
+        public static void Stop()
         {
             if (Manager == null) return;
             try
             {
                 Manager.StopSubsystems();
                 Manager.DeinitializeLoader();
-                log.Msg("OpenXR stopped");
+                Log.Msg("OpenXR stopped");
             }
             catch (Exception e)
             {
-                log.Error("XR stop failed: " + e);
+                Log.Error("XR stop failed: " + e);
             }
             Loader = null;
             Manager = null;
@@ -130,7 +129,7 @@ namespace DnWVR.XR
             catch { }
         }
 
-        static OpenXRSettings CreateOpenXRSettings(MelonLogger.Instance log, bool singlePassInstanced)
+        static OpenXRSettings CreateOpenXRSettings(bool singlePassInstanced)
         {
             // Awake() of OpenXRSettings stores the instance in the static runtime slot.
             var settings = ScriptableObject.CreateInstance<OpenXRSettings>();
@@ -150,8 +149,8 @@ namespace DnWVR.XR
             SetField(settings, "features", features.ToArray());
 
             if (OpenXRSettings.Instance != settings)
-                log.Warning("OpenXRSettings.Instance is not the runtime-created instance; feature registration may be ignored");
-            log.Msg($"OpenXR settings created with {features.Count} interaction profiles");
+                Log.Warning("OpenXRSettings.Instance is not the runtime-created instance; feature registration may be ignored");
+            Log.Msg($"OpenXR settings created with {features.Count} interaction profiles");
             return settings;
         }
 

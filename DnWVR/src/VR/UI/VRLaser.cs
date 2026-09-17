@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -23,7 +22,6 @@ namespace DnWVR.VR
         /// <summary>Above every panel the mod draws (32000) and every converted canvas (VRUI.SortingShift and above).</summary>
         const int SortingOrder = 32500;
 
-        static MelonLogger.Instance s_log;
 
         LineRenderer _line;
         Transform _dot;
@@ -38,9 +36,8 @@ namespace DnWVR.VR
 
         static bool s_leftTriggerWas, s_rightTriggerWas;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             var go = new GameObject("DnWVR_Laser");
             DontDestroyOnLoad(go);

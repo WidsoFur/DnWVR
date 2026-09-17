@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using MelonLoader;
 using UnityEngine;
 
 namespace DnWVR.VR
@@ -17,12 +16,9 @@ namespace DnWVR.VR
         static readonly string[] Bones = { "Dick.x.001", "Dick.x.002", "Dick.x.003", "Dick.x.004", "Dick.x.head", "CumOutput" };
         static readonly float[] Radii = { 0.2f, 0.2f, 0.2f, 0.18f, 0.15f, 0.05f };
 
-        static MelonLogger.Instance s_log;
         static readonly Transform[] s_chain = new Transform[Bones.Length];
         static readonly HashSet<Collider> s_colliders = new HashSet<Collider>();
         static GameObject s_dragon;
-
-        public static void Initialize(MelonLogger.Instance log) => s_log = log;
 
         /// <summary>The penis colliders exist and follow the bones.</summary>
         public static bool Active => s_dragon != null && s_chain[0] != null;
@@ -48,7 +44,7 @@ namespace DnWVR.VR
             }
             for (int i = 0; i + 1 < Bones.Length; i++) AddSegment(i);
             s_dragon = dragon.gameObject;
-            s_log?.Msg($"[BonePenis] {s_dragon.name}: {s_colliders.Count} colliders along {Bones[0]}..{Bones[Bones.Length - 1]}");
+            Log.Msg($"[BonePenis] {s_dragon.name}: {s_colliders.Count} colliders along {Bones[0]}..{Bones[Bones.Length - 1]}");
         }
 
         /// <summary>Forgets the capsules (they go with their scene).</summary>

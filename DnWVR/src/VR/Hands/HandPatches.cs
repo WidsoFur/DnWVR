@@ -2,7 +2,6 @@ using System;
 using System.Reflection;
 using com.gatordragongames.washnwalk.tools;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 
 namespace DnWVR.VR
@@ -39,38 +38,36 @@ namespace DnWVR.VR
         public static bool TouchWorldSurfaces = false; // floors/props give sounds too (never game events)
         public static bool SpongeNeedsTrigger = true;
 
-        static MelonLogger.Instance s_log;
 
-        public static void Apply(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Apply(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
             PlapperVR.Bind();
             SpongeVR.Bind();
             InteractableVR.Bind();
-            BindTouchGate(log);
-            Patch(harmony, log, typeof(PlapperHand), "UseContinuous", nameof(PlapperUse_Prefix));
-            Patch(harmony, log, typeof(PlapperHand), "UpdateNotInUse", nameof(PlapperIdle_Prefix));
+            BindTouchGate();
+            Patch(harmony, typeof(PlapperHand), "UseContinuous", nameof(PlapperUse_Prefix));
+            Patch(harmony, typeof(PlapperHand), "UpdateNotInUse", nameof(PlapperIdle_Prefix));
             // StopUse stays unpatched: it only clears IsInteracting, so a flag set in grip mode or before the hands attached
             // still clears on the next grip release.
-            Patch(harmony, log, typeof(PlapperHand), "StartUse", nameof(PlapperStart_Prefix));
-            Patch(harmony, log, typeof(ToolModelSponge), "UseContinuous", nameof(SpongeUse_Prefix));
-            Patch(harmony, log, typeof(ToolModelSponge), "UpdateNotInUse", nameof(SpongeIdle_Prefix));
-            Patch(harmony, log, typeof(Interactable), "GetBestInteractable", nameof(GetBestInteractable_Prefix));
-            Patch(harmony, log, typeof(Interacter), "OnAttackStarted", nameof(InteracterAttack_Prefix));
+            Patch(harmony, typeof(PlapperHand), "StartUse", nameof(PlapperStart_Prefix));
+            Patch(harmony, typeof(ToolModelSponge), "UseContinuous", nameof(SpongeUse_Prefix));
+            Patch(harmony, typeof(ToolModelSponge), "UpdateNotInUse", nameof(SpongeIdle_Prefix));
+            Patch(harmony, typeof(Interactable), "GetBestInteractable", nameof(GetBestInteractable_Prefix));
+            Patch(harmony, typeof(Interacter), "OnAttackStarted", nameof(InteracterAttack_Prefix));
         }
 
-        static void Patch(HarmonyLib.Harmony harmony, MelonLogger.Instance log, Type target, string method, string prefix)
+        static void Patch(HarmonyLib.Harmony harmony, Type target, string method, string prefix)
         {
             try
             {
                 var original = AccessTools.Method(target, method);
-                if (original == null) { log.Warning($"[HandPatches] {target.Name}.{method} not found; skipping"); return; }
+                if (original == null) { Log.Warning($"[HandPatches] {target.Name}.{method} not found; skipping"); return; }
                 harmony.Patch(original, new HarmonyMethod(typeof(HandPatches).GetMethod(prefix, Any)));
-                log.Msg($"[HandPatches] patched {target.Name}.{method}");
+                Log.Msg($"[HandPatches] patched {target.Name}.{method}");
             }
             catch (Exception e)
             {
-                log.Error($"[HandPatches] failed to patch {target.Name}.{method}: {e}");
+                Log.Error($"[HandPatches] failed to patch {target.Name}.{method}: {e}");
             }
         }
 
@@ -78,7 +75,7 @@ namespace DnWVR.VR
 
         static void LogT(string msg)
         {
-            if (DnWVRMod.DebugInteractionLog) s_log?.Msg(msg);
+            if (DnWVRMod.DebugInteractionLog) Log.Msg(msg);
         }
 
         static bool PlapperUse_Prefix(PlapperHand __instance)
@@ -163,10 +160,10 @@ namespace DnWVR.VR
         static bool s_allowed = true;
         static bool s_loggedNoToolTest;
 
-        static void BindTouchGate(MelonLogger.Instance log)
+        static void BindTouchGate()
         {
             try { s_interactEnabled = AccessTools.FieldRefAccess<ToolTest, bool>("interactEnabled"); }
-            catch (Exception e) { log.Warning("[HandPatches] ToolTest.interactEnabled not bound (touch ignores dialogue): " + e.Message); }
+            catch (Exception e) { Log.Warning("[HandPatches] ToolTest.interactEnabled not bound (touch ignores dialogue): " + e.Message); }
         }
 
         // Cached per frame. ToolTest.interactEnabled is the game's interaction switch (off during dialogue).
@@ -183,7 +180,7 @@ namespace DnWVR.VR
                 else if (tt == null && !s_loggedNoToolTest)
                 {
                     s_loggedNoToolTest = true;
-                    s_log?.Warning("[HandPatches] no ToolTest on ToolAnchor; touch is not gated on the game's interaction switch");
+                    Log.Warning("[HandPatches] no ToolTest on ToolAnchor; touch is not gated on the game's interaction switch");
                 }
                 var gsm = GameStateManager.Instance;
                 if (gsm != null && gsm.IsPaused) allowed = false;

@@ -1,7 +1,6 @@
 using System;
 using DPG;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 
 namespace DnWVR.VR
@@ -23,16 +22,14 @@ namespace DnWVR.VR
         static int s_builtFor = -1;
         static bool s_failed;
         static AccessTools.FieldRef<WalkNWashPenetratorPhysicsApprox, PenetratorJiggleDeform> s_penetrator;
-        static MelonLogger.Instance s_log;
 
-        public static void Initialize(MelonLogger.Instance log)
+        public static void Initialize()
         {
-            s_log = log;
             try { s_penetrator = AccessTools.FieldRefAccess<WalkNWashPenetratorPhysicsApprox, PenetratorJiggleDeform>("penetrator"); }
             catch (Exception e)
             {
                 s_failed = true;
-                log.Warning("[PenisTube] penetrator field not found, hands pass through the penis: " + e.Message);
+                Log.Warning("[PenisTube] penetrator field not found, hands pass through the penis: " + e.Message);
             }
         }
 
@@ -120,7 +117,7 @@ namespace DnWVR.VR
             {
                 s_failed = true;
                 s_count = 0;
-                s_log?.Warning("[PenisTube] disabled, hands pass through the penis: " + e);
+                Log.Warning("[PenisTube] disabled, hands pass through the penis: " + e);
             }
             return s_count >= 2;
         }

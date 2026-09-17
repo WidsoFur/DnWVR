@@ -16,7 +16,6 @@ namespace DnWVR
     public class DnWVRMod : MelonMod
     {
         public static DnWVRMod Instance { get; private set; }
-        public static MelonLogger.Instance Log => Instance.LoggerInstance;
 
         public static MelonPreferences_Category Prefs;
         public static MelonPreferences_Entry<bool> PrefEnableVR;
@@ -63,13 +62,14 @@ namespace DnWVR
         public override void OnInitializeMelon()
         {
             Instance = this;
+            Log.Bind(LoggerInstance);
             CreatePreferences();
             ApplyTunablePrefs();
 
-            LoggerInstance.Msg($"DnWVR init. Unity {Application.unityVersion}, gfx {SystemInfo.graphicsDeviceType}, " +
-                               $"screen {Screen.width}x{Screen.height}");
-            LoggerInstance.Msg("Hotkeys: F5 head tracking, F6 reload prefs, F7 debug start level, F8 recenter, " +
-                               "F9 dump diagnostics, F10 XR descriptors, F11 start/stop OpenXR");
+            Log.Msg($"DnWVR init. Unity {Application.unityVersion}, gfx {SystemInfo.graphicsDeviceType}, " +
+                    $"screen {Screen.width}x{Screen.height}");
+            Log.Msg("Hotkeys: F5 head tracking, F6 reload prefs, F7 debug start level, F8 recenter, " +
+                    "F9 dump diagnostics, F10 XR descriptors, F11 start/stop OpenXR");
 
             InstallModules();
 
@@ -240,19 +240,18 @@ namespace DnWVR
         /// <summary>Each module binds game members by name; a renamed member must not take the whole mod down.</summary>
         void InstallModules()
         {
-            Guarded("CameraPatches", () => CameraPatches.Apply(HarmonyInstance, LoggerInstance));
-            Guarded("InputPatches", () => InputPatches.Apply(HarmonyInstance, LoggerInstance));
-            Guarded("HandPatches", () => HandPatches.Apply(HarmonyInstance, LoggerInstance));
-            Guarded("RenderTweaks", () => RenderTweaks.ApplyPatches(HarmonyInstance, LoggerInstance));
-            Guarded("VRUI", () => { VRUI.Initialize(LoggerInstance); VRUI.ApplyPatches(HarmonyInstance, LoggerInstance); });
-            Guarded("DialogueVR", () => DialogueVR.Apply(HarmonyInstance, LoggerInstance));
-            Guarded("VRHands", () => VRHands.Initialize(LoggerInstance));
-            Guarded("PlayerBody", () => PlayerBody.Install(HarmonyInstance, LoggerInstance));
-            Guarded("SexScene", () => SexScene.Install(HarmonyInstance, LoggerInstance));
-            Guarded("VRInput", () => VRInput.Initialize(LoggerInstance));
-            Guarded("DesktopMirror", () => DesktopMirror.Install(HarmonyInstance, LoggerInstance));
-            Guarded("DesktopView", () => DesktopView.Install(LoggerInstance));
-            Guarded("VirtualMouse", () => VirtualMouse.Initialize(LoggerInstance));
+            Guarded("CameraPatches", () => CameraPatches.Apply(HarmonyInstance));
+            Guarded("InputPatches", () => InputPatches.Apply(HarmonyInstance));
+            Guarded("HandPatches", () => HandPatches.Apply(HarmonyInstance));
+            Guarded("RenderTweaks", () => RenderTweaks.ApplyPatches(HarmonyInstance));
+            Guarded("VRUI", () => { VRUI.Initialize(); VRUI.ApplyPatches(HarmonyInstance); });
+            Guarded("DialogueVR", () => DialogueVR.Apply(HarmonyInstance));
+            Guarded("VRHands", () => VRHands.Initialize());
+            Guarded("PlayerBody", () => PlayerBody.Install(HarmonyInstance));
+            Guarded("SexScene", () => SexScene.Install(HarmonyInstance));
+            Guarded("VRInput", () => VRInput.Initialize());
+            Guarded("DesktopMirror", () => DesktopMirror.Install(HarmonyInstance));
+            Guarded("DesktopView", () => DesktopView.Install());
         }
 
         IEnumerator StartXRWhenReady()
@@ -266,8 +265,8 @@ namespace DnWVR
                 if (StartXR()) yield break;
                 if (i < attempts)
                 {
-                    LoggerInstance.Msg($"OpenXR not available yet (attempt {i}/{attempts}); retrying in 5 s. " +
-                                       "Put the headset on / connect Virtual Desktop, or press F11 later.");
+                    Log.Msg($"OpenXR not available yet (attempt {i}/{attempts}); retrying in 5 s. " +
+                            "Put the headset on / connect Virtual Desktop, or press F11 later.");
                     yield return new WaitForSecondsRealtime(5f);
                 }
             }
@@ -275,14 +274,14 @@ namespace DnWVR
 
         bool StartXR()
         {
-            if (!XRBootstrap.Start(LoggerInstance, PrefSinglePassInstanced.Value)) return false;
+            if (!XRBootstrap.Start(PrefSinglePassInstanced.Value)) return false;
             if (!_lateLatchHooked)
             {
                 Application.onBeforeRender += VRRig.LateLatch;
                 _lateLatchHooked = true;
             }
             AttachStaticCameraFollower();
-            XRRenderFixes.Apply(LoggerInstance, PrefSinglePassInstanced.Value);
+            XRRenderFixes.Apply(PrefSinglePassInstanced.Value);
             VRInput.DisableStockXRBindingsEverywhere();
             VRInput.AddDevice();
             InputPatches.ForceControllerGlyphs();
@@ -290,15 +289,15 @@ namespace DnWVR
             VRHands.AttachGameHands();
             PlayerBody.Attach();
             SexScene.Attach();
-            RadialToolMenu.Ensure(LoggerInstance);
-            DebugSceneMenu.Ensure(LoggerInstance);
-            VRFader.Ensure(LoggerInstance);
-            FinishHold.Ensure(LoggerInstance);
-            VRLaser.Ensure(LoggerInstance);
-            ItemLaser.Ensure(LoggerInstance);
-            MenuHands.Ensure(LoggerInstance);
-            VRSettings.Ensure(LoggerInstance);
-            RenderTweaks.ApplyToScene(LoggerInstance);
+            RadialToolMenu.Ensure();
+            DebugSceneMenu.Ensure();
+            VRFader.Ensure();
+            FinishHold.Ensure();
+            VRLaser.Ensure();
+            ItemLaser.Ensure();
+            MenuHands.Ensure();
+            VRSettings.Ensure();
+            RenderTweaks.ApplyToScene();
             VRUI.ConvertAll();
             MelonCoroutines.Start(StereoDiagnosticsAfterDelay());
             return true;
@@ -308,7 +307,7 @@ namespace DnWVR
         {
             // The session becomes visible/focused a moment after StartSubsystems; report once it is.
             yield return new WaitForSecondsRealtime(3f);
-            if (XRBootstrap.IsRunning) RenderTweaks.LogStereoState(LoggerInstance);
+            if (XRBootstrap.IsRunning) RenderTweaks.LogStereoState();
         }
 
         void StopXR()
@@ -326,12 +325,12 @@ namespace DnWVR
             PlayerBody.Detach();
             SexScene.Detach();
             DesktopView.Disable();
-            XRBootstrap.Stop(LoggerInstance);
+            XRBootstrap.Stop();
         }
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
-            LoggerInstance.Msg($"Scene loaded: {sceneName} (#{buildIndex})");
+            Log.Msg($"Scene loaded: {sceneName} (#{buildIndex})");
             VRFader.Flash(0.8f); // hide the first frames of a new scene while the rig re-aligns
             VRRig.ResetForNewScene();
             VRHands.OnSceneChanged();
@@ -356,10 +355,10 @@ namespace DnWVR
             }
             if (XRBootstrap.IsRunning)
             {
-                Guarded("XRRenderFixes", () => XRRenderFixes.Apply(LoggerInstance, PrefSinglePassInstanced.Value));
+                Guarded("XRRenderFixes", () => XRRenderFixes.Apply(PrefSinglePassInstanced.Value));
                 Guarded("VRInput", () => { VRInput.DisableStockXRBindingsEverywhere(); VRInput.AddDevice(); });
                 Guarded("InputPatches", InputPatches.ForceControllerGlyphs);
-                Guarded("RenderTweaks", () => RenderTweaks.ApplyToScene(LoggerInstance));
+                Guarded("RenderTweaks", () => RenderTweaks.ApplyToScene());
                 Guarded("VRUI", VRUI.ConvertAll);
                 yield return TakeOverPlayer(sceneName);
             }
@@ -385,16 +384,16 @@ namespace DnWVR
                 float waited = Time.realtimeSinceStartup - start;
                 if (VRHands.Attached)
                 {
-                    if (waited > 0.5f) LoggerInstance.Msg($"Hands took {waited:0.0} s to appear in {sceneName}");
+                    if (waited > 0.5f) Log.Msg($"Hands took {waited:0.0} s to appear in {sceneName}");
                     yield break;
                 }
                 if (waited > giveUpAfter)
                 {
                     if (PlayerBody.Attached)
-                        LoggerInstance.Warning($"{sceneName} has a player to walk with but no hands to wash with; " +
-                                               "press F11 twice to try again, and please report the log");
+                        Log.Warning($"{sceneName} has a player to walk with but no hands to wash with; " +
+                                    "press F11 twice to try again, and please report the log");
                     else
-                        LoggerInstance.Msg($"{sceneName} has no player to take over (menus and the credits have none)");
+                        Log.Msg($"{sceneName} has no player to take over (menus and the credits have none)");
                     yield break;
                 }
                 yield return new WaitForSeconds(0.25f);
@@ -415,7 +414,7 @@ namespace DnWVR
             }
             if (best == null) return;
             best.tag = "MainCamera";
-            LoggerInstance.Msg($"[VR] {best.name} carries no MainCamera tag; adopted it as this scene's camera");
+            Log.Msg($"[VR] {best.name} carries no MainCamera tag; adopted it as this scene's camera");
         }
 
         static void AttachStaticCameraFollower()
@@ -437,7 +436,7 @@ namespace DnWVR
             var kb = Keyboard.current;
             if (kb == null) return;
             if (kb.f9Key.wasPressedThisFrame) SafeDump("manual");
-            if (kb.f10Key.wasPressedThisFrame) SceneDumper.LogXRDescriptors(LoggerInstance);
+            if (kb.f10Key.wasPressedThisFrame) SceneDumper.LogXRDescriptors();
             if (kb.f11Key.wasPressedThisFrame)
             {
                 if (XRBootstrap.IsRunning) StopXR();
@@ -446,7 +445,7 @@ namespace DnWVR
             if (kb.f5Key.wasPressedThisFrame)
             {
                 VRRig.TrackingEnabled = !VRRig.TrackingEnabled;
-                LoggerInstance.Msg($"Head tracking {(VRRig.TrackingEnabled ? "on" : "off")}");
+                Log.Msg($"Head tracking {(VRRig.TrackingEnabled ? "on" : "off")}");
             }
             if (kb.f7Key.wasPressedThisFrame) DebugStartLevel();
             if (kb.f6Key.wasPressedThisFrame)
@@ -455,22 +454,22 @@ namespace DnWVR
                 ApplyTunablePrefs();
                 VRHands.ApplyOffsets();
                 PlayerBody.ApplySettings();
-                RenderTweaks.ReapplyFluidSwitch(LoggerInstance);
-                LoggerInstance.Msg("Preferences reloaded and applied");
+                RenderTweaks.ReapplyFluidSwitch();
+                Log.Msg("Preferences reloaded and applied");
             }
             if (kb.f8Key.wasPressedThisFrame)
             {
                 VRRig.SampleHmd();
                 VRRig.RecenterPosition();
                 VRRig.RecenterYaw(LookControllerYawOrRig());
-                LoggerInstance.Msg("Recentered");
+                Log.Msg("Recentered");
             }
         }
 
         void Guarded(string what, Action action)
         {
             try { action(); }
-            catch (Exception e) { LoggerInstance.Error($"{what} failed to initialize: {e}"); }
+            catch (Exception e) { Log.Error($"{what} failed to initialize: {e}"); }
         }
 
         static void ApplyTunablePrefs()
@@ -546,7 +545,7 @@ namespace DnWVR
             {
                 if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "StartScene")
                 {
-                    LoggerInstance.Msg("DebugStartLevel: only works from StartScene");
+                    Log.Msg("DebugStartLevel: only works from StartScene");
                     return;
                 }
                 int slot = 0;
@@ -554,17 +553,17 @@ namespace DnWVR
                     if (SaveManagerV1.GetSlotProgress(i) == 0) { slot = i; break; }
                 if (slot == 0)
                 {
-                    LoggerInstance.Msg("DebugStartLevel: no empty slot, using Continue");
+                    Log.Msg("DebugStartLevel: no empty slot, using Continue");
                     MenuManager.TriggerEvent(new MenuEventUserIntent("Continue"));
                     return;
                 }
                 MenuManager.TriggerEvent(new MenuEventUserIntent("NewGame"));
                 MenuManager.TriggerEvent(new MenuEventUserIntent("NewSlot" + slot));
-                LoggerInstance.Msg($"DebugStartLevel: new game in slot {slot}");
+                Log.Msg($"DebugStartLevel: new game in slot {slot}");
             }
             catch (Exception e)
             {
-                LoggerInstance.Error("DebugStartLevel failed: " + e);
+                Log.Error("DebugStartLevel failed: " + e);
             }
         }
 
@@ -584,11 +583,11 @@ namespace DnWVR
             try
             {
                 var path = SceneDumper.DumpToFile(tag);
-                LoggerInstance.Msg($"Diagnostics written: {path}");
+                Log.Msg($"Diagnostics written: {path}");
             }
             catch (Exception e)
             {
-                LoggerInstance.Error($"Dump failed: {e}");
+                Log.Error($"Dump failed: {e}");
             }
         }
     }

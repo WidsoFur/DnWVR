@@ -1,6 +1,5 @@
 using System;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -22,7 +21,6 @@ namespace DnWVR.VR
 
         static AccessTools.FieldRef<BlackoutFader> s_blackout;
         static AccessTools.FieldRef<BlackoutFader, CanvasGroup> s_blackoutGroup;
-        static MelonLogger.Instance s_log;
 
         Canvas _canvas;
         Image _image;
@@ -31,9 +29,8 @@ namespace DnWVR.VR
         float _requestAlpha;
         int _lastFrame = -1;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             try
             {
@@ -42,7 +39,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                log.Warning("[VRFader] BlackoutFader unavailable: " + e.Message);
+                Log.Warning("[VRFader] BlackoutFader unavailable: " + e.Message);
             }
             var go = new GameObject("DnWVR_Fader");
             DontDestroyOnLoad(go);

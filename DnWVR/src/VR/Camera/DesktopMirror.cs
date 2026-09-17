@@ -21,7 +21,6 @@ namespace DnWVR.VR
         static MelonPreferences_Entry<bool> s_prefEnabled;
         static MelonPreferences_Entry<bool> s_prefFlipX;
         static MelonPreferences_Entry<bool> s_prefFlipY;
-        static MelonLogger.Instance s_log;
 
         static RenderTexture s_rt;
         static string s_path = "";
@@ -35,9 +34,8 @@ namespace DnWVR.VR
         static bool FlipX => s_prefFlipX != null && s_prefFlipX.Value;
         static bool FlipY => SystemInfo.graphicsUVStartsAtTop != (s_prefFlipY != null && s_prefFlipY.Value);
 
-        public static void Install(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Install(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
             if (DnWVRMod.Prefs != null)
             {
                 s_prefEnabled = DnWVRMod.Prefs.CreateEntry("DesktopMirror", true, "Show the VR view in the desktop window");
@@ -48,11 +46,11 @@ namespace DnWVR.VR
             var method = type != null ? AccessTools.Method(type, "RenderMirrorView") : null;
             if (method == null)
             {
-                log.Warning("[DesktopMirror] XRMirrorView.RenderMirrorView not found; no desktop preview");
+                Log.Warning("[DesktopMirror] XRMirrorView.RenderMirrorView not found; no desktop preview");
                 return;
             }
             harmony.Patch(method, prefix: new HarmonyMethod(typeof(DesktopMirror).GetMethod(nameof(RenderMirrorView_Prefix), AnyStatic)));
-            log.Msg("[DesktopMirror] installed");
+            Log.Msg("[DesktopMirror] installed");
         }
 
         // Runs on the render loop after every XR base camera's passes, with the desktop back buffer as CameraTarget.
@@ -69,7 +67,7 @@ namespace DnWVR.VR
                 if (!s_loggedError)
                 {
                     s_loggedError = true;
-                    s_log?.Warning("[DesktopMirror] mirror failed (will keep trying): " + e);
+                    Log.Warning("[DesktopMirror] mirror failed (will keep trying): " + e);
                 }
             }
             return false;
@@ -122,8 +120,8 @@ namespace DnWVR.VR
                     string source = bp.srcTex != null
                         ? $"{bp.srcTex.name} {bp.srcTex.width}x{bp.srcTex.height} {bp.srcTex.graphicsFormat} {bp.srcTex.dimension}"
                         : "null";
-                    s_log?.Msg($"[DesktopMirror] runtime blit: params={desc.blitParamsCount} srcTex={source} " +
-                               $"slice={bp.srcTexArraySlice} srcRect={bp.srcRect} destRect={bp.destRect}; " +
+                    Log.Msg($"[DesktopMirror] runtime blit: params={desc.blitParamsCount} srcTex={source} " +
+                            $"slice={bp.srcTexArraySlice} srcRect={bp.srcRect} destRect={bp.destRect}; " +
                                $"left eye pass 0 {width}x{height} {format}");
                 }
             }
@@ -131,7 +129,7 @@ namespace DnWVR.VR
             if (msaa > 1 || (SystemInfo.copyTextureSupport & CopyTextureSupport.DifferentTypes) == 0 || width <= 0 || height <= 0)
             {
                 s_copyUnsupported = true;
-                s_log?.Warning($"[DesktopMirror] cannot copy the eye texture (msaa={msaa}, copyTextureSupport={SystemInfo.copyTextureSupport}); no desktop preview");
+                Log.Warning($"[DesktopMirror] cannot copy the eye texture (msaa={msaa}, copyTextureSupport={SystemInfo.copyTextureSupport}); no desktop preview");
                 return;
             }
 
@@ -192,7 +190,7 @@ namespace DnWVR.VR
         {
             if (s_path == path) return;
             s_path = path;
-            s_log?.Msg("[DesktopMirror] the desktop window shows " + path);
+            Log.Msg("[DesktopMirror] the desktop window shows " + path);
         }
     }
 }

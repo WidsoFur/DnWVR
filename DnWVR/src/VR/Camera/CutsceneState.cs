@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using CutsceneData = WalkNWashCutsceneNode.CutsceneData;
 using CutsceneMachine = WalkNWashCutsceneNode.CutsceneStateMachine;
@@ -36,7 +35,6 @@ namespace DnWVR.VR
         static AccessTools.FieldRef<OrbitCameraArbitraryCuts, float> s_timer;
         static bool s_bound;
         static bool s_loggedRefreshError;
-        static MelonLogger.Instance s_log;
 
         /// <summary>The node's blend weight: 0 = player camera, 1 = cutscene camera.</summary>
         public static float Weight { get; private set; }
@@ -72,9 +70,8 @@ namespace DnWVR.VR
         static int s_arbShot = -1;
         static bool s_arbInTransition;
 
-        public static void Bind(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Bind(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
             try
             {
                 s_node = AccessTools.FieldRefAccess<WalkNWashOrbitCamera, WalkNWashCutsceneNode>("cutsceneNode");
@@ -91,7 +88,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                log.Error("[CutsceneState] could not bind the camera graph state (cutscenes will be treated as gameplay): " + e);
+                Log.Error("[CutsceneState] could not bind the camera graph state (cutscenes will be treated as gameplay): " + e);
                 return;
             }
 
@@ -100,15 +97,15 @@ namespace DnWVR.VR
                 var process = AccessTools.Method(typeof(OrbitCameraArbitraryCuts), "Process");
                 if (process == null)
                 {
-                    log.Warning("[CutsceneState] OrbitCameraArbitraryCuts.Process not found; sex-scene shot changes will not be faded");
+                    Log.Warning("[CutsceneState] OrbitCameraArbitraryCuts.Process not found; sex-scene shot changes will not be faded");
                     return;
                 }
                 harmony.Patch(process, postfix: new HarmonyMethod(typeof(CutsceneState).GetMethod(nameof(ArbitraryProcess_Postfix), Any)));
-                log.Msg("[CutsceneState] patched OrbitCameraArbitraryCuts.Process");
+                Log.Msg("[CutsceneState] patched OrbitCameraArbitraryCuts.Process");
             }
             catch (Exception e)
             {
-                log.Error("[CutsceneState] failed to patch OrbitCameraArbitraryCuts.Process: " + e);
+                Log.Error("[CutsceneState] failed to patch OrbitCameraArbitraryCuts.Process: " + e);
             }
         }
 
@@ -159,11 +156,11 @@ namespace DnWVR.VR
             try
             {
                 WalkNWashOrbitCamera.LookAtGameObject(null);
-                s_log?.Msg($"[CutsceneState] dialogue {action.GetType().Name} was already running in VR: cancelled (DialogueCameraZoom is off)");
+                Log.Msg($"[CutsceneState] dialogue {action.GetType().Name} was already running in VR: cancelled (DialogueCameraZoom is off)");
             }
             catch (Exception e)
             {
-                s_log?.Warning($"[CutsceneState] cancelling dialogue {action.GetType().Name} failed: {e.Message}");
+                Log.Warning($"[CutsceneState] cancelling dialogue {action.GetType().Name} failed: {e.Message}");
             }
         }
 
@@ -209,7 +206,7 @@ namespace DnWVR.VR
                     Generation++;
                     ActionName = action != null ? action.GetType().Name : "";
                     if (DnWVRMod.DebugInteractionLog)
-                        s_log?.Msg($"[CutsceneState] action -> {(action != null ? ActionName : "(none)")} gen {Generation}");
+                        Log.Msg($"[CutsceneState] action -> {(action != null ? ActionName : "(none)")} gen {Generation}");
                 }
                 bool arbRecent = !isDefault && s_arbFrame >= Time.frameCount - 1;
                 if (arbRecent && (!ReferenceEquals(s_arbCuts, s_lastCuts) || s_arbShot != s_lastShot))
@@ -256,7 +253,7 @@ namespace DnWVR.VR
                 if (!s_loggedRefreshError)
                 {
                     s_loggedRefreshError = true;
-                    s_log?.Warning("[CutsceneState] refresh failed (will keep retrying): " + e);
+                    Log.Warning("[CutsceneState] refresh failed (will keep retrying): " + e);
                 }
             }
         }

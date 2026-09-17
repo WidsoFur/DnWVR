@@ -1,6 +1,5 @@
 using System;
 using DnWVR.XR;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
@@ -29,7 +28,6 @@ namespace DnWVR.VR
         /// <summary>Index fingertip relative to the controller grip pose (metres, controller space).</summary>
         public static Vector3 TipOffset = new Vector3(0f, -0.02f, 0.11f);
 
-        static MelonLogger.Instance s_log;
 
         struct Touch
         {
@@ -78,9 +76,8 @@ namespace DnWVR.VR
         public static float MenuWidth(float normal) => Enabled && XRBootstrap.IsRunning && IsPokeScene ? PokeMenuWidth : normal;
         public static float MenuHeightOffset(float normal) => Enabled && XRBootstrap.IsRunning && IsPokeScene ? PokeMenuHeight : normal;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             var go = new GameObject("DnWVR_MenuHands");
             DontDestroyOnLoad(go);

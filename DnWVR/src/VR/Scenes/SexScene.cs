@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using DnWVR.XR;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Yarn.Unity;
@@ -56,7 +55,6 @@ namespace DnWVR.VR
         static readonly int SpeedId = Animator.StringToHash("Speed");
         static readonly int BlendId = Animator.StringToHash("Blend");
 
-        static MelonLogger.Instance s_log;
         static AccessTools.FieldRef<AnimationBlender, Animator[]> s_animators;
         static AccessTools.FieldRef<AnimationBlender, float> s_speedMultiplier;
 
@@ -103,10 +101,8 @@ namespace DnWVR.VR
             }
         }
 
-        public static void Install(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Install(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
-            BonePenis.Initialize(log);
             s_animators = AccessTools.FieldRefAccess<AnimationBlender, Animator[]>("animators");
             s_speedMultiplier = AccessTools.FieldRefAccess<AnimationBlender, float>("speedMultiplier");
             harmony.Patch(AccessTools.Method(typeof(AnimationBlender), "Update"),
@@ -121,7 +117,7 @@ namespace DnWVR.VR
                 prefix: new HarmonyMethod(typeof(SexScene).GetMethod(nameof(RunLine_Prefix), Any)));
             harmony.Patch(AccessTools.Method(typeof(OptionsPresenter), nameof(OptionsPresenter.RunOptionsAsync), new[] { typeof(DialogueOption[]), typeof(LineCancellationToken) }),
                 prefix: new HarmonyMethod(typeof(SexScene).GetMethod(nameof(RunOptions_Prefix), Any)));
-            log.Msg("[SexScene] installed");
+            Log.Msg("[SexScene] installed");
         }
 
         /// <summary>The player held A: the dragon climaxes after its last line.</summary>
@@ -129,7 +125,7 @@ namespace DnWVR.VR
         {
             if (!CanFinish) return;
             s_finishRequested = true;
-            s_log?.Msg($"[SexScene] {s_sceneName}: the player finishes (pleasure {Arousal:0.00})");
+            Log.Msg($"[SexScene] {s_sceneName}: the player finishes (pleasure {Arousal:0.00})");
         }
 
         static string CurrentNode()
@@ -205,7 +201,7 @@ namespace DnWVR.VR
                         s_plan = Plan.Loop;
                         s_linesPlayed = lines;
                         SetLoops(node, lines);
-                        s_log?.Msg($"[SexScene] {s_sceneName}: lines {lines} (pleasure {Arousal:0.00})");
+                        Log.Msg($"[SexScene] {s_sceneName}: lines {lines} (pleasure {Arousal:0.00})");
                         yield break;
                     }
                 }
@@ -244,7 +240,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                s_log?.Warning("[SexScene] cannot set the loop counter: " + e.Message);
+                Log.Warning("[SexScene] cannot set the loop counter: " + e.Message);
             }
         }
 
@@ -274,7 +270,7 @@ namespace DnWVR.VR
             {
                 pick = dialogueOptions.Length - 1;
                 s_finaleChosen = true;
-                s_log?.Msg($"[SexScene] {s_sceneName}: climax ({(s_finishRequested ? "the player finished" : "full pleasure")})");
+                Log.Msg($"[SexScene] {s_sceneName}: climax ({(s_finishRequested ? "the player finished" : "full pleasure")})");
             }
             __result = YarnTask<DialogueOption>.FromResult(dialogueOptions[pick]);
             return false;
@@ -330,7 +326,7 @@ namespace DnWVR.VR
                 // Alexander's penis is part of his body: give it colliders and a tube.
                 BonePenis.Attach();
             }
-            s_log?.Msg(kind == Kind.Interactive
+            Log.Msg(kind == Kind.Interactive
                 ? $"[SexScene] {scene}: player body hidden, pace and dialogue from the hands {(Interactive ? "on" : "off")}"
                 : $"[SexScene] {scene}: watching, A ends the scene {(Interactive ? "on" : "off")}");
         }
@@ -464,7 +460,7 @@ namespace DnWVR.VR
             if (quarter != s_loggedQuarter)
             {
                 s_loggedQuarter = quarter;
-                if (DnWVRMod.DebugInteractionLog) s_log?.Msg($"[SexScene] pleasure {Arousal:0.00} (hands {(handsOn ? "on" : "off")}, activity {s_activity:0.00} m/s, speed {s_speed:0.00}, blend {s_blend:0.00})");
+                if (DnWVRMod.DebugInteractionLog) Log.Msg($"[SexScene] pleasure {Arousal:0.00} (hands {(handsOn ? "on" : "off")}, activity {s_activity:0.00} m/s, speed {s_speed:0.00}, blend {s_blend:0.00})");
             }
         }
     }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using com.gatordragongames.washnwalk.tools;
 using DnWVR.XR;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.XR;
 
@@ -83,7 +82,6 @@ namespace DnWVR.VR
         static Quaternion s_plapperLR, s_toolLR;
         static Vector3 s_plapperScale = Vector3.one;
         static bool s_attached;
-        static MelonLogger.Instance s_log;
         static float s_lastSampleTime = -1f;
         // Hand speed is sampled in tracking space, so it is body-relative: walking, riding the dragon skin or a moving
         // cutscene spot add nothing to a slap.
@@ -121,11 +119,10 @@ namespace DnWVR.VR
         /// <summary>Largest <see cref="TrackVel"/> magnitude over the last <see cref="PeakWindow"/> seconds.</summary>
         public static float PeakSpeed(bool right) => (right ? s_speedR : s_speedL).Max(Time.unscaledTime, PeakWindow);
 
-        public static void Initialize(MelonLogger.Instance log)
+        public static void Initialize()
         {
-            s_log = log;
             HandLayer = PickHandLayer();
-            PenisTube.Initialize(log);
+            PenisTube.Initialize();
             VRRig.AfterCameraWrite += UpdateFromTracking;
             if (!s_toolEventHooked)
             {
@@ -267,7 +264,7 @@ namespace DnWVR.VR
             if (v.sqrMagnitude > MaxTrackSpeed * MaxTrackSpeed)
             {
                 jump = true;
-                if (DnWVRMod.DebugInteractionLog) s_log?.Msg($"[VRHands] {side} controller jumped {localDelta.magnitude:0.000} m in one frame; no speed sample");
+                if (DnWVRMod.DebugInteractionLog) Log.Msg($"[VRHands] {side} controller jumped {localDelta.magnitude:0.000} m in one frame; no speed sample");
                 return Vector3.zero;
             }
             speed.Add(now, v.magnitude);
@@ -346,7 +343,7 @@ namespace DnWVR.VR
                 if (s_toolAnchor.parent != toolHost)
                 {
                     s_toolAnchor.SetParent(toolHost, false);
-                    s_log?.Msg($"VRHands: ToolAnchor on {(ToolHandIsRight ? "right" : "left")} hand");
+                    Log.Msg($"VRHands: ToolAnchor on {(ToolHandIsRight ? "right" : "left")} hand");
                 }
                 PoseToolAnchor();
                 SyncHeldToolColliders();
@@ -356,7 +353,7 @@ namespace DnWVR.VR
                 if (s_plapper.parent != bareHost)
                 {
                     s_plapper.SetParent(bareHost, false);
-                    s_log?.Msg($"VRHands: bare hand on {(bareRight ? "right (mirrored)" : "left")} hand");
+                    Log.Msg($"VRHands: bare hand on {(bareRight ? "right (mirrored)" : "left")} hand");
                 }
                 PoseHandMesh(s_plapper, bareRight);
                 s_plapper.gameObject.SetActive(true);
@@ -367,7 +364,7 @@ namespace DnWVR.VR
                 if (twinHost != null && s_twin.parent != twinHost)
                 {
                     s_twin.SetParent(twinHost, false);
-                    s_log?.Msg($"VRHands: twin hand on {(ToolHandIsRight ? "right (mirrored)" : "left")} hand");
+                    Log.Msg($"VRHands: twin hand on {(ToolHandIsRight ? "right (mirrored)" : "left")} hand");
                 }
                 PoseHandMesh(s_twin, ToolHandIsRight);
                 // Shown exactly when the real paw is (so both hands or neither), and never over a held tool.
@@ -409,14 +406,14 @@ namespace DnWVR.VR
                 s_gripToAim[i] = offset;
                 s_gripToAimMeasured[i] = true;
                 var e = offset.eulerAngles;
-                s_log?.Msg($"VRHands: {(right ? "R" : "L")} controller aim pose is ({e.x:0.0}, {e.y:0.0}, {e.z:0.0}) from the grip");
+                Log.Msg($"VRHands: {(right ? "R" : "L")} controller aim pose is ({e.x:0.0}, {e.y:0.0}, {e.z:0.0}) from the grip");
                 if (s_attached && right == ToolHandIsRight) PoseToolAnchor();
             }
             catch (Exception e)
             {
                 if (s_gripToAimFailed) return;
                 s_gripToAimFailed = true;
-                s_log?.Warning("VRHands: grip -> aim measurement failed (tools keep the estimate): " + e.Message);
+                Log.Warning("VRHands: grip -> aim measurement failed (tools keep the estimate): " + e.Message);
             }
         }
 
@@ -482,11 +479,11 @@ namespace DnWVR.VR
                 if (s_twinAudio != null) s_twinAudio.loop = true;
                 go.SetActive(false);
                 s_twin.SetParent(host, false);
-                s_log?.Msg($"VRHands: twin hand created (animator={s_twinAnimator != null}, audio={s_twinAudio != null}, slap collider={s_twinSlap != null})");
+                Log.Msg($"VRHands: twin hand created (animator={s_twinAnimator != null}, audio={s_twinAudio != null}, slap collider={s_twinSlap != null})");
             }
             catch (Exception e)
             {
-                s_log?.Warning("VRHands: twin hand setup failed: " + e.Message);
+                Log.Warning("VRHands: twin hand setup failed: " + e.Message);
                 DestroyTwin();
             }
             finally
@@ -530,7 +527,7 @@ namespace DnWVR.VR
         static void OnToolChanged(Tool newTool)
         {
             if (!s_attached) return;
-            s_log?.Msg($"VRHands: tool -> {(newTool != null ? newTool.GetName() : "null")}");
+            Log.Msg($"VRHands: tool -> {(newTool != null ? newTool.GetName() : "null")}");
             bool holding = IsHoldingTool();
             if (holding && !s_holdingTool)
             {
@@ -557,7 +554,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                s_log?.Warning("VRHands: held tool collider setup failed: " + e.Message);
+                Log.Warning("VRHands: held tool collider setup failed: " + e.Message);
             }
         }
 
@@ -584,7 +581,7 @@ namespace DnWVR.VR
                 s_toolGameColliders.Add(c);
             }
             if (s_toolGameColliders.Count > 0)
-                s_log?.Msg($"VRHands: {model.name}: {s_toolGameColliders.Count} solid collider(s) switched off while held");
+                Log.Msg($"VRHands: {model.name}: {s_toolGameColliders.Count} solid collider(s) switched off while held");
         }
 
         static void RestoreGameToolColliders()
@@ -613,7 +610,7 @@ namespace DnWVR.VR
                     s_toolAnchor.localPosition = s_toolLP; s_toolAnchor.localRotation = s_toolLR;
                 }
             }
-            catch (Exception e) { s_log?.Warning("VRHands: detach failed: " + e.Message); }
+            catch (Exception e) { Log.Warning("VRHands: detach failed: " + e.Message); }
             s_plapper = s_toolAnchor = null;
             s_plapperSlap = null;
             ToolTest = null;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using com.gatordragongames.washnwalk.tools;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using Yarn.Unity;
 
@@ -25,7 +24,6 @@ namespace DnWVR.VR
         /// <summary>Grip or trigger skips dialogue lines outside interactive sex scenes: a line shows in full, then the next comes.</summary>
         public static bool SkipLines = true;
 
-        static MelonLogger.Instance s_log;
         static AccessTools.FieldRef<DialogCommands> s_instance;
         static AccessTools.FieldRef<DialogCommands, DialogueRunner> s_runner;
         static AccessTools.FieldRef<DialogCommands, LineAdvancer> s_lineAdvancer;
@@ -51,9 +49,8 @@ namespace DnWVR.VR
             }
         }
 
-        public static void Apply(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Apply(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
             s_instance = AccessTools.StaticFieldRefAccess<DialogCommands>(AccessTools.Field(typeof(DialogCommands), "_instance"));
             s_runner = AccessTools.FieldRefAccess<DialogCommands, DialogueRunner>("dialogueRunner");
             s_lineAdvancer = AccessTools.FieldRefAccess<DialogCommands, LineAdvancer>("lineAdvancer");
@@ -69,7 +66,7 @@ namespace DnWVR.VR
                 postfix: new HarmonyMethod(typeof(DialogueVR).GetMethod(nameof(StartDialogue_Postfix), Any)));
             harmony.Patch(AccessTools.Method(typeof(DialogCommands), "SetAutoAdvanceOff"),
                 postfix: new HarmonyMethod(typeof(DialogueVR).GetMethod(nameof(SetAutoAdvanceOff_Postfix), Any)));
-            log.Msg("[DialogueVR] installed");
+            Log.Msg("[DialogueVR] installed");
         }
 
         // The flat game steals the player's controls for a dialogue; in VR the player keeps them.

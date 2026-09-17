@@ -1,6 +1,5 @@
 using System;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -28,7 +27,6 @@ namespace DnWVR.VR
         const float JumpDistance = 0.5f;
         const float JumpAngle = 20f;
 
-        static MelonLogger.Instance s_log;
         static AccessTools.FieldRef<UniversalAdditionalCameraData, int> s_rendererIndex;
         static Camera s_camera;
         static RenderTexture s_texture;
@@ -44,13 +42,12 @@ namespace DnWVR.VR
         /// <summary>The texture to show in the window, or null to fall back to the eye.</summary>
         public static RenderTexture Texture => Enabled && s_camera != null && s_camera.enabled && s_texture != null && s_texture.IsCreated() ? s_texture : null;
 
-        public static void Install(MelonLogger.Instance log)
+        public static void Install()
         {
-            s_log = log;
             try { s_rendererIndex = AccessTools.FieldRefAccess<UniversalAdditionalCameraData, int>("m_RendererIndex"); }
-            catch (Exception e) { log.Warning("[DesktopView] renderer index unavailable, the view uses the default renderer: " + e.Message); }
+            catch (Exception e) { Log.Warning("[DesktopView] renderer index unavailable, the view uses the default renderer: " + e.Message); }
             VRRig.AfterCameraWrite += Follow;
-            log.Msg("[DesktopView] installed");
+            Log.Msg("[DesktopView] installed");
         }
 
         /// <summary>Every frame (Update): stops the extra render once the rig no longer writes the camera (loading, XR off).</summary>
@@ -125,7 +122,7 @@ namespace DnWVR.VR
                         UnityEngine.Object.Destroy(s_texture);
                     }
                     s_texture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32) { name = "DnWVR_DesktopView", antiAliasing = msaa };
-                    s_log?.Msg($"[DesktopView] the window's view renders at {width}x{height}, MSAA {msaa}x (window {windowWidth}x{windowHeight})");
+                    Log.Msg($"[DesktopView] the window's view renders at {width}x{height}, MSAA {msaa}x (window {windowWidth}x{windowHeight})");
                 }
                 if (!s_texture.IsCreated()) s_texture.Create();
                 if (s_camera == null)
@@ -147,7 +144,7 @@ namespace DnWVR.VR
             {
                 s_failed = true;
                 Disable();
-                s_log?.Error("[DesktopView] disabled, the window shows the left eye: " + e);
+                Log.Error("[DesktopView] disabled, the window shows the left eye: " + e);
                 return false;
             }
         }

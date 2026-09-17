@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Layouts;
@@ -51,14 +50,12 @@ namespace DnWVR.VR
 
         static bool s_registered;
         static int s_snapArmed = 1; // 1 = ready, 0 = waiting for stick to return to centre
-        static MelonLogger.Instance s_log;
 
         static AccessTools.FieldRef<MenuManager> s_menuManager;
         static AccessTools.FieldRef<MenuManager, Menu> s_currentMenu;
 
-        public static void Initialize(MelonLogger.Instance log)
+        public static void Initialize()
         {
-            s_log = log;
             try
             {
                 s_menuManager = AccessTools.StaticFieldRefAccess<MenuManager>(AccessTools.Field(typeof(MenuManager), "_instance"));
@@ -66,7 +63,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                log.Warning("[VRInput] MenuManager state not bound (X will not resume from the pause menu): " + e.Message);
+                Log.Warning("[VRInput] MenuManager state not bound (X will not resume from the pause menu): " + e.Message);
             }
             if (!s_registered)
             {
@@ -85,18 +82,18 @@ namespace DnWVR.VR
                 // player loop alive regardless of focus.
                 Application.runInBackground = true;
                 try { InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus; }
-                catch (Exception e) { s_log?.Warning("backgroundBehavior not applied: " + e.Message); }
+                catch (Exception e) { Log.Warning("backgroundBehavior not applied: " + e.Message); }
                 Pad = (DnWVRGamepad)InputSystem.AddDevice(new InputDeviceDescription
                 {
                     interfaceName = InterfaceName,
                     product = "Quest Touch (VR)",
                     manufacturer = "DnWVR",
                 });
-                s_log?.Msg($"Virtual gamepad added: {Pad.displayName} (id {Pad.deviceId})");
+                Log.Msg($"Virtual gamepad added: {Pad.displayName} (id {Pad.deviceId})");
             }
             catch (Exception e)
             {
-                s_log?.Error("Failed to add virtual gamepad: " + e);
+                Log.Error("Failed to add virtual gamepad: " + e);
             }
         }
 
@@ -174,7 +171,7 @@ namespace DnWVR.VR
             if (!Left.Primary) s_xBlock = false;
             s_xWas = Left.Primary;
             // Diagnostic: the left menu button doubles as the SteamVR system button and is not fed to the game.
-            if (Left.Menu && !s_menuWas) s_log?.Msg("[VRInput] left menu/system button seen by app (ignored)");
+            if (Left.Menu && !s_menuWas) Log.Msg("[VRInput] left menu/system button seen by app (ignored)");
             s_menuWas = Left.Menu;
 
             HandleTurn();
@@ -258,14 +255,14 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                s_log?.Warning("[VRInput] resume failed: " + e.Message);
+                Log.Warning("[VRInput] resume failed: " + e.Message);
                 return false;
             }
         }
 
         static void LogI(string msg)
         {
-            if (DnWVRMod.DebugInteractionLog) s_log?.Msg(msg);
+            if (DnWVRMod.DebugInteractionLog) Log.Msg(msg);
         }
 
         /// <summary>
@@ -297,9 +294,9 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                s_log?.Warning($"DisableStockXRBindings({label}) failed: {e.Message}");
+                Log.Warning($"DisableStockXRBindings({label}) failed: {e.Message}");
             }
-            if (count > 0) s_log?.Msg($"Disabled {count} stock XR bindings in {label}");
+            if (count > 0) Log.Msg($"Disabled {count} stock XR bindings in {label}");
         }
 
         public static void DisableStockXRBindingsEverywhere()
@@ -310,7 +307,7 @@ namespace DnWVR.VR
                 var runtime = MenuManager.actions.asset;
                 if (runtime != null && seen.Add(runtime)) DisableStockXRBindings(runtime, "MenuManager.actions");
             }
-            catch (Exception e) { s_log?.Warning("MenuManager.actions unavailable: " + e.Message); }
+            catch (Exception e) { Log.Warning("MenuManager.actions unavailable: " + e.Message); }
             foreach (var pi in UnityEngine.Object.FindObjectsByType<PlayerInput>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 if (pi.actions != null && seen.Add(pi.actions)) DisableStockXRBindings(pi.actions, "PlayerInput:" + pi.name);
@@ -326,7 +323,7 @@ namespace DnWVR.VR
                     DisableStockXRBindings(asset, "asset:" + asset.name);
                 }
             }
-            catch (Exception e) { s_log?.Warning("asset sweep failed: " + e.Message); }
+            catch (Exception e) { Log.Warning("asset sweep failed: " + e.Message); }
         }
     }
 }

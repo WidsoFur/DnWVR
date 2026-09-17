@@ -2,7 +2,6 @@ using System;
 using System.Reflection;
 using DnWVR.XR;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 
 namespace DnWVR.VR
@@ -17,45 +16,43 @@ namespace DnWVR.VR
 
         static AccessTools.FieldRef<LookController, Vector2> s_smoothedLook;
         static AccessTools.FieldRef<LookController, Vector2> s_smoothingVelocity;
-        static MelonLogger.Instance s_log;
         static bool s_loggedLookAtSkip;
         static bool s_loggedLookFromToSkip;
 
-        public static void Apply(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Apply(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
             s_smoothedLook = AccessTools.FieldRefAccess<LookController, Vector2>("smoothedLook");
             s_smoothingVelocity = AccessTools.FieldRefAccess<LookController, Vector2>("smoothingVelocity");
 
-            Patch(harmony, log, typeof(OrbitCameraData), "ApplyTo", prefix: nameof(ApplyTo_Prefix));
-            Patch(harmony, log, typeof(LookController), "LateUpdate", prefix: nameof(LookLateUpdate_Prefix));
-            Patch(harmony, log, typeof(LookController), "AddLookRotation", prefix: nameof(SkipWhenVR));
-            Patch(harmony, log, typeof(OrbitCameraShake), "ApplyShake", prefix: nameof(SkipWhenVR));
-            Patch(harmony, log, typeof(ArbitraryCut), "Update", prefix: nameof(SkipWhenVR));
-            Patch(harmony, log, typeof(PlayerController), "Teleport", postfix: nameof(Teleport_Postfix));
-            Patch(harmony, log, typeof(WalkNWashOrbitCamera), "LookAtGameObject", prefix: nameof(LookAt_Prefix));
-            Patch(harmony, log, typeof(WalkNWashOrbitCamera), "LookFromWindowAtGameObject", prefix: nameof(LookFromTo_Prefix));
-            CutsceneState.Bind(harmony, log);
+            Patch(harmony, typeof(OrbitCameraData), "ApplyTo", prefix: nameof(ApplyTo_Prefix));
+            Patch(harmony, typeof(LookController), "LateUpdate", prefix: nameof(LookLateUpdate_Prefix));
+            Patch(harmony, typeof(LookController), "AddLookRotation", prefix: nameof(SkipWhenVR));
+            Patch(harmony, typeof(OrbitCameraShake), "ApplyShake", prefix: nameof(SkipWhenVR));
+            Patch(harmony, typeof(ArbitraryCut), "Update", prefix: nameof(SkipWhenVR));
+            Patch(harmony, typeof(PlayerController), "Teleport", postfix: nameof(Teleport_Postfix));
+            Patch(harmony, typeof(WalkNWashOrbitCamera), "LookAtGameObject", prefix: nameof(LookAt_Prefix));
+            Patch(harmony, typeof(WalkNWashOrbitCamera), "LookFromWindowAtGameObject", prefix: nameof(LookFromTo_Prefix));
+            CutsceneState.Bind(harmony);
         }
 
-        static void Patch(HarmonyLib.Harmony harmony, MelonLogger.Instance log, Type target, string method, string prefix = null, string postfix = null)
+        static void Patch(HarmonyLib.Harmony harmony, Type target, string method, string prefix = null, string postfix = null)
         {
             try
             {
                 var original = AccessTools.Method(target, method);
                 if (original == null)
                 {
-                    log.Warning($"[CameraPatches] {target.Name}.{method} not found; skipping");
+                    Log.Warning($"[CameraPatches] {target.Name}.{method} not found; skipping");
                     return;
                 }
                 var pre = prefix != null ? new HarmonyMethod(typeof(CameraPatches).GetMethod(prefix, Any)) : null;
                 var post = postfix != null ? new HarmonyMethod(typeof(CameraPatches).GetMethod(postfix, Any)) : null;
                 harmony.Patch(original, pre, post);
-                log.Msg($"[CameraPatches] patched {target.Name}.{method}");
+                Log.Msg($"[CameraPatches] patched {target.Name}.{method}");
             }
             catch (Exception e)
             {
-                log.Error($"[CameraPatches] failed to patch {target.Name}.{method}: {e}");
+                Log.Error($"[CameraPatches] failed to patch {target.Name}.{method}: {e}");
             }
         }
 
@@ -125,7 +122,7 @@ namespace DnWVR.VR
             if (!s_loggedLookAtSkip)
             {
                 s_loggedLookAtSkip = true;
-                s_log?.Msg("[CameraPatches] dialogue LookAt ignored in VR (camera stays in your head; set DialogueCameraZoom = true to restore)");
+                Log.Msg("[CameraPatches] dialogue LookAt ignored in VR (camera stays in your head; set DialogueCameraZoom = true to restore)");
             }
             return false;
         }
@@ -138,7 +135,7 @@ namespace DnWVR.VR
             if (!s_loggedLookFromToSkip)
             {
                 s_loggedLookFromToSkip = true;
-                s_log?.Msg("[CameraPatches] dialogue LookFromTo ignored in VR (camera stays in your head; set DialogueCameraZoom = true to restore)");
+                Log.Msg("[CameraPatches] dialogue LookFromTo ignored in VR (camera stays in your head; set DialogueCameraZoom = true to restore)");
             }
             return false;
         }

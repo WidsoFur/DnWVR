@@ -1,6 +1,5 @@
 using System;
 using HarmonyLib;
-using MelonLoader;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -50,7 +49,6 @@ namespace DnWVR.VR
         /// <summary>The panel is open (the laser pointer shows while it is).</summary>
         public static bool IsOpen => Instance != null && Instance._open;
 
-        static MelonLogger.Instance s_log;
         static AccessTools.FieldRef<WalkNWashSceneState> s_sceneState;
         static AccessTools.FieldRef<WalkNWashSceneState, LevelFlow> s_levelFlow;
         static AccessTools.FieldRef<WalkNWashSceneState, WalkNWashSceneState.DragonState> s_dragonState;
@@ -63,9 +61,8 @@ namespace DnWVR.VR
         bool _open;
         bool _wasButton;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             try
             {
@@ -77,7 +74,7 @@ namespace DnWVR.VR
             catch (Exception e)
             {
                 s_sceneState = null;
-                log.Warning("[DebugSceneMenu] the level flow is not reachable; the day buttons stay out: " + e.Message);
+                Log.Warning("[DebugSceneMenu] the level flow is not reachable; the day buttons stay out: " + e.Message);
             }
             var go = new GameObject("DnWVR_DebugSceneMenu");
             DontDestroyOnLoad(go);
@@ -269,16 +266,16 @@ namespace DnWVR.VR
             catch (Exception e)
             {
                 _status.text = "Failed: " + e.Message;
-                s_log?.Warning($"[DebugSceneMenu] {entry.Intent} failed in {menu}: {e.Message}");
+                Log.Warning($"[DebugSceneMenu] {entry.Intent} failed in {menu}: {e.Message}");
                 return;
             }
             if (MenuManager.GetCurrentMenuName() == menu)
             {
                 _status.text = $"{menu} ignores this: sex scenes need a loaded game, Continue needs the main menu";
-                s_log?.Msg($"[DebugSceneMenu] {entry.Intent} ignored by {menu}");
+                Log.Msg($"[DebugSceneMenu] {entry.Intent} ignored by {menu}");
                 return;
             }
-            s_log?.Msg($"[DebugSceneMenu] {entry.Label}: {entry.Intent} from {menu}");
+            Log.Msg($"[DebugSceneMenu] {entry.Label}: {entry.Intent} from {menu}");
             Close();
         }
 
@@ -304,12 +301,12 @@ namespace DnWVR.VR
                 if (s_dragonState != null) s_dragonState(state) = WalkNWashSceneState.DragonState.Exited;
                 VRFader.Flash(1.2f);
                 s_startLevel(state);
-                s_log?.Msg($"[DebugSceneMenu] day {day + 1} started, {day} day(s) before it marked done");
+                Log.Msg($"[DebugSceneMenu] day {day + 1} started, {day} day(s) before it marked done");
             }
             catch (Exception e)
             {
                 _status.text = "Failed: " + e.Message;
-                s_log?.Warning($"[DebugSceneMenu] day {day + 1} failed: {e}");
+                Log.Warning($"[DebugSceneMenu] day {day + 1} failed: {e}");
                 return;
             }
             Close();

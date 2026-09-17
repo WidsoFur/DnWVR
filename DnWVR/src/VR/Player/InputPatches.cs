@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine.InputSystem;
 
 namespace DnWVR.VR
@@ -14,34 +13,32 @@ namespace DnWVR.VR
         const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         static MethodInfo s_trySetGlyphType;
-        static MelonLogger.Instance s_log;
 
-        public static void Apply(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Apply(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
             try
             {
                 s_trySetGlyphType = AccessTools.Method(typeof(AutoInputSwitcher), "TrySetGlyphType");
                 var original = AccessTools.Method(typeof(AutoInputSwitcher), "OnDeviceChanged");
                 if (original == null)
-                    log.Warning("[InputPatches] AutoInputSwitcher.OnDeviceChanged not found; skipping");
+                    Log.Warning("[InputPatches] AutoInputSwitcher.OnDeviceChanged not found; skipping");
                 else
                 {
                     harmony.Patch(original, new HarmonyMethod(typeof(InputPatches).GetMethod(nameof(OnDeviceChanged_Prefix), Any)));
-                    log.Msg("[InputPatches] patched AutoInputSwitcher.OnDeviceChanged");
+                    Log.Msg("[InputPatches] patched AutoInputSwitcher.OnDeviceChanged");
                 }
                 var update = AccessTools.Method(typeof(AutoInputSwitcher), "Update");
                 if (update == null)
-                    log.Warning("[InputPatches] AutoInputSwitcher.Update not found; skipping");
+                    Log.Warning("[InputPatches] AutoInputSwitcher.Update not found; skipping");
                 else
                 {
                     harmony.Patch(update, new HarmonyMethod(typeof(InputPatches).GetMethod(nameof(Update_Prefix), Any)));
-                    log.Msg("[InputPatches] patched AutoInputSwitcher.Update");
+                    Log.Msg("[InputPatches] patched AutoInputSwitcher.Update");
                 }
             }
             catch (Exception e)
             {
-                log.Error("[InputPatches] failed: " + e);
+                Log.Error("[InputPatches] failed: " + e);
             }
 
             // Diagnostic only: its own try, so a Steamworks load or patch failure never takes the patches above with it.
@@ -49,16 +46,16 @@ namespace DnWVR.VR
             {
                 var overlay = AccessTools.Method(typeof(AutoInputSwitcher), "OnGameOverlayActivated");
                 if (overlay == null)
-                    log.Warning("[InputPatches] AutoInputSwitcher.OnGameOverlayActivated not found; skipping");
+                    Log.Warning("[InputPatches] AutoInputSwitcher.OnGameOverlayActivated not found; skipping");
                 else
                 {
                     harmony.Patch(overlay, postfix: new HarmonyMethod(typeof(InputPatches).GetMethod(nameof(OnGameOverlayActivated_Postfix), Any)));
-                    log.Msg("[InputPatches] patched AutoInputSwitcher.OnGameOverlayActivated");
+                    Log.Msg("[InputPatches] patched AutoInputSwitcher.OnGameOverlayActivated");
                 }
             }
             catch (Exception e)
             {
-                log.Warning("[InputPatches] Steam overlay diagnostic not patched: " + e.Message);
+                Log.Warning("[InputPatches] Steam overlay diagnostic not patched: " + e.Message);
             }
         }
 
@@ -82,7 +79,7 @@ namespace DnWVR.VR
         // Diagnostic: fires on Steam overlay / SteamVR dashboard open and close; the game sends its own "Pause" on open.
         static void OnGameOverlayActivated_Postfix()
         {
-            s_log?.Msg("[InputPatches] Steam overlay activated -> game sends Pause");
+            Log.Msg("[InputPatches] Steam overlay activated -> game sends Pause");
         }
 
         /// <summary>Pin the game to controller mode with Xbox glyphs (matches Touch controllers).</summary>
@@ -93,11 +90,11 @@ namespace DnWVR.VR
                 var inst = AccessTools.Field(typeof(AutoInputSwitcher), "instance")?.GetValue(null) as AutoInputSwitcher;
                 if (inst == null || s_trySetGlyphType == null) return;
                 s_trySetGlyphType.Invoke(inst, new object[] { ActionHintDatabase.GlyphType.Xbox });
-                s_log?.Msg("[InputPatches] control type pinned to controller (Xbox glyphs)");
+                Log.Msg("[InputPatches] control type pinned to controller (Xbox glyphs)");
             }
             catch (Exception e)
             {
-                s_log?.Warning("[InputPatches] ForceControllerGlyphs failed: " + e.Message);
+                Log.Warning("[InputPatches] ForceControllerGlyphs failed: " + e.Message);
             }
         }
     }

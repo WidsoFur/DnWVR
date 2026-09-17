@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using com.gatordragongames.washnwalk.tools;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
@@ -33,7 +32,6 @@ namespace DnWVR.VR
         static AccessTools.FieldRef<List<Interactable>> s_interactables;
         static Func<Interactable, Tool, bool> s_canInteract;
         static AccessTools.FieldRef<Interacter, bool> s_interactEnabled;
-        static MelonLogger.Instance s_log;
         static Interactable s_prompt;
         static readonly Dictionary<Component, Renderer[]> s_renderers = new Dictionary<Component, Renderer[]>();
 
@@ -68,9 +66,8 @@ namespace DnWVR.VR
         /// <summary>The target the game should prompt for: the one acquired last by either hand, or null.</summary>
         public static Interactable PromptTarget => s_prompt != null ? s_prompt : null;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             try
             {
@@ -79,11 +76,11 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                log.Error("[ItemLaser] reflection failed (grip interacts through the game's cone instead): " + e);
+                Log.Error("[ItemLaser] reflection failed (grip interacts through the game's cone instead): " + e);
                 return;
             }
             try { s_interactEnabled = AccessTools.FieldRefAccess<Interacter, bool>("interactEnabled"); }
-            catch (Exception e) { log.Warning("[ItemLaser] Interacter.interactEnabled not bound (the laser ignores the game's interaction switch): " + e.Message); }
+            catch (Exception e) { Log.Warning("[ItemLaser] Interacter.interactEnabled not bound (the laser ignores the game's interaction switch): " + e.Message); }
             var go = new GameObject("DnWVR_ItemLaser");
             DontDestroyOnLoad(go);
             Instance = go.AddComponent<ItemLaser>();
@@ -279,7 +276,7 @@ namespace DnWVR.VR
             // A tool picked up here belongs to this controller, even if the other one gripped later in the same input update.
             VRHands.NotifyGrip(h.Right);
             try { t.Interact(tools.Current); }
-            catch (Exception e) { s_log?.Warning($"[ItemLaser] Interact on {what} failed: {e.Message}"); }
+            catch (Exception e) { Log.Warning($"[ItemLaser] Interact on {what} failed: {e.Message}"); }
             VRWidgets.Haptic(h.Node, 0.5f, 0.06f);
         }
 
@@ -491,7 +488,7 @@ namespace DnWVR.VR
 
         static void LogI(string msg)
         {
-            if (DnWVRMod.DebugInteractionLog) s_log?.Msg(msg);
+            if (DnWVRMod.DebugInteractionLog) Log.Msg(msg);
         }
     }
 }

@@ -1,4 +1,3 @@
-using MelonLoader;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,7 +21,6 @@ namespace DnWVR.VR
         const float Pixels = 256f;
 
         public static FinishHold Instance { get; private set; }
-        static MelonLogger.Instance s_log;
 
         Canvas _canvas;
         RectTransform _root;
@@ -30,9 +28,8 @@ namespace DnWVR.VR
         float _progress;
         bool _consumed;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             var go = new GameObject("DnWVR_FinishHold");
             DontDestroyOnLoad(go);

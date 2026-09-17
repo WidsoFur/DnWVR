@@ -1,5 +1,4 @@
 using System;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
@@ -17,10 +16,7 @@ namespace DnWVR.VR
         public static readonly Vector2 OffScreen = new Vector2(-1000f, -1000f);
 
         static Mouse s_mouse;
-        static MelonLogger.Instance s_log;
         static bool s_loggedNoDevice;
-
-        public static void Initialize(MelonLogger.Instance log) => s_log = log;
 
         /// <summary>Puts the pointer at a screen position, with or without the left button down.</summary>
         public static void Feed(Vector2 screenPos, bool leftDown)
@@ -49,7 +45,7 @@ namespace DnWVR.VR
                 if (!s_loggedNoDevice)
                 {
                     s_loggedNoDevice = true;
-                    s_log?.Warning("[VirtualMouse] cannot add a mouse; panels stay unclickable: " + e.Message);
+                    Log.Warning("[VirtualMouse] cannot add a mouse; panels stay unclickable: " + e.Message);
                 }
             }
             return s_mouse != null;

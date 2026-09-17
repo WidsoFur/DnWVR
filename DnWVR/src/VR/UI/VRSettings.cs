@@ -28,7 +28,6 @@ namespace DnWVR.VR
 
         public static VRSettings Instance { get; private set; }
 
-        static MelonLogger.Instance s_log;
         static AccessTools.FieldRef<ScriptableSettingSpawner, GameObject> s_groupTitle, s_textInput;
         static AccessTools.FieldRef<ScriptableSettingSpawner, bool> s_ready;
 
@@ -37,9 +36,8 @@ namespace DnWVR.VR
         TextMeshProUGUI _turnAmountLabel;
         int _sweep;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             try
             {
@@ -49,7 +47,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                log.Error("[VRSettings] the game's settings spawner looks different than expected: " + e);
+                Log.Error("[VRSettings] the game's settings spawner looks different than expected: " + e);
                 return;
             }
             var go = new GameObject("DnWVR_VRSettings");
@@ -103,11 +101,11 @@ namespace DnWVR.VR
                 BuildTurnRow(NewRow(content, TurnRowName, "Turning"));
                 BuildTurnAmountRow(NewRow(content, TurnAmountRowName, string.Empty));
                 Refresh();
-                s_log?.Msg("[VRSettings] VR section added to the options screen");
+                Log.Msg("[VRSettings] VR section added to the options screen");
             }
             catch (Exception e)
             {
-                s_log?.Error("[VRSettings] could not build the VR section: " + e);
+                Log.Error("[VRSettings] could not build the VR section: " + e);
                 Instance = null;
                 Destroy(gameObject);
             }
@@ -159,11 +157,11 @@ namespace DnWVR.VR
         {
             if (!VRRig.HasPose || !VRRig.HmdTracked)
             {
-                s_log?.Warning("[VRSettings] no headset pose to calibrate against");
+                Log.Warning("[VRSettings] no headset pose to calibrate against");
                 return;
             }
             SetHeight(Mathf.RoundToInt(VRRig.HmdLocalPos.y * 100f));
-            s_log?.Msg($"[VRSettings] calibrated to {VRRig.HeightCm} cm from the headset");
+            Log.Msg($"[VRSettings] calibrated to {VRRig.HeightCm} cm from the headset");
         }
 
         void SetHeight(int cm)
@@ -219,7 +217,7 @@ namespace DnWVR.VR
             if (entry == null) return;
             entry.Value = value;
             try { MelonPreferences.Save(); }
-            catch (Exception e) { s_log?.Warning("[VRSettings] could not save a setting: " + e.Message); }
+            catch (Exception e) { Log.Warning("[VRSettings] could not save a setting: " + e.Message); }
         }
 
         /// <summary>The row's value field: digits only when it takes typing, a plain display when it does not.</summary>

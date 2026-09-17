@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
-using MelonLoader;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -42,7 +41,6 @@ namespace DnWVR.VR
         public static IEnumerable<Canvas> Converted => s_converted;
 
         static HudFollower s_hudFollower;
-        static MelonLogger.Instance s_log;
         static AccessTools.FieldRef<UiPrompt, RectTransform> s_promptRect;
 
         /// <summary>Adds a world-space panel the mod builds itself: the laser points at it and it draws over the world.</summary>
@@ -52,12 +50,11 @@ namespace DnWVR.VR
             if (OnTop) DrawOnTop(c);
         }
 
-        public static void Initialize(MelonLogger.Instance log)
+        public static void Initialize()
         {
-            s_log = log;
         }
 
-        public static void ApplyPatches(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void ApplyPatches(HarmonyLib.Harmony harmony)
         {
             try
             {
@@ -66,25 +63,25 @@ namespace DnWVR.VR
                 if (show != null)
                 {
                     harmony.Patch(show, postfix: new HarmonyMethod(typeof(VRUI).GetMethod(nameof(MenuShow_Postfix), Any)));
-                    log.Msg("[VRUI] patched Menu.Show");
+                    Log.Msg("[VRUI] patched Menu.Show");
                 }
                 var prompt = AccessTools.Method(typeof(UiPrompt), "_ShowPrompt");
                 if (prompt != null)
                 {
                     harmony.Patch(prompt, new HarmonyMethod(typeof(VRUI).GetMethod(nameof(ShowPrompt_Prefix), Any)));
-                    log.Msg("[VRUI] patched UiPrompt._ShowPrompt");
+                    Log.Msg("[VRUI] patched UiPrompt._ShowPrompt");
                 }
                 // The UI input module treats a locked cursor as "pointer off screen"; in VR the lock is meaningless.
                 var lateUpdate = AccessTools.Method(typeof(GameStateManager), "LateUpdate");
                 if (lateUpdate != null)
                 {
                     harmony.Patch(lateUpdate, postfix: new HarmonyMethod(typeof(VRUI).GetMethod(nameof(CursorLock_Postfix), Any)));
-                    log.Msg("[VRUI] patched GameStateManager.LateUpdate");
+                    Log.Msg("[VRUI] patched GameStateManager.LateUpdate");
                 }
             }
             catch (Exception e)
             {
-                log.Error("[VRUI] patch failed: " + e);
+                Log.Error("[VRUI] patch failed: " + e);
             }
         }
 
@@ -111,10 +108,10 @@ namespace DnWVR.VR
                 }
                 catch (Exception e)
                 {
-                    s_log?.Warning($"[VRUI] failed to convert canvas {c.name}: {e.Message}");
+                    Log.Warning($"[VRUI] failed to convert canvas {c.name}: {e.Message}");
                 }
             }
-            if (n > 0) s_log?.Msg($"[VRUI] converted {n} canvases to world space");
+            if (n > 0) Log.Msg($"[VRUI] converted {n} canvases to world space");
         }
 
         static void Convert(Canvas c)
@@ -157,7 +154,7 @@ namespace DnWVR.VR
                 s_hudFollower.SnapTo(rt);
             }
             if (OnTop) DrawOnTop(c);
-            s_log?.Msg($"[VRUI] {c.name}: {pixelSize.x}x{pixelSize.y} px -> {width:0.00} m ({(menu ? "menu" : "head-locked")})");
+            Log.Msg($"[VRUI] {c.name}: {pixelSize.x}x{pixelSize.y} px -> {width:0.00} m ({(menu ? "menu" : "head-locked")})");
         }
 
         // Gives every graphic under a converted canvas a copy of its material that skips the depth test and draws after the
@@ -241,7 +238,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                s_log?.Warning("[VRUI] MenuShow failed: " + e.Message);
+                Log.Warning("[VRUI] MenuShow failed: " + e.Message);
             }
         }
 

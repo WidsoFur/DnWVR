@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using com.gatordragongames.washnwalk.tools;
 using HarmonyLib;
-using MelonLoader;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,7 +33,6 @@ namespace DnWVR.VR
 
         static AccessTools.FieldRef<InteractableToolEquip, Tool> s_stationTool;
         static Func<Interactable, Tool, bool> s_canInteract;
-        static MelonLogger.Instance s_log;
 
         Canvas _canvas;
         RectTransform _root;
@@ -45,9 +43,8 @@ namespace DnWVR.VR
         bool _open;
         bool _wasButton;
 
-        public static void Ensure(MelonLogger.Instance log)
+        public static void Ensure()
         {
-            s_log = log;
             if (Instance != null) return;
             try
             {
@@ -56,7 +53,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                log.Error("[RadialToolMenu] reflection failed: " + e);
+                Log.Error("[RadialToolMenu] reflection failed: " + e);
                 return;
             }
             var go = new GameObject("DnWVR_RadialToolMenu");
@@ -132,7 +129,7 @@ namespace DnWVR.VR
             if (activate && _selected >= 0 && _selected < _items.Count)
             {
                 try { Activate(_items[_selected]); }
-                catch (Exception e) { s_log?.Error("[RadialToolMenu] activate failed: " + e); }
+                catch (Exception e) { Log.Error("[RadialToolMenu] activate failed: " + e); }
             }
         }
 
@@ -161,7 +158,7 @@ namespace DnWVR.VR
             }
             if (_items.Count == 0)
             {
-                s_log?.Msg("[RadialToolMenu] nothing to equip here");
+                Log.Msg("[RadialToolMenu] nothing to equip here");
                 return false;
             }
 
@@ -223,7 +220,7 @@ namespace DnWVR.VR
                 if (!PutAway(current))
                 {
                     // Unequipping without a station would destroy the model and lose the tool for the level.
-                    s_log?.Msg($"[RadialToolMenu] no station accepts {current.name}; keeping it");
+                    Log.Msg($"[RadialToolMenu] no station accepts {current.name}; keeping it");
                     return;
                 }
                 if (item.PutAway) return;
@@ -231,7 +228,7 @@ namespace DnWVR.VR
             if (item.Station == null || !item.Station.placedModelActive) return;
             item.Station.Interact(ToolManager.GetEmptyTool());
             VRWidgets.Haptic(XRNode.RightHand, 0.5f, 0.08f);
-            s_log?.Msg($"[RadialToolMenu] equipped {item.Label} from {item.Station.name}");
+            Log.Msg($"[RadialToolMenu] equipped {item.Label} from {item.Station.name}");
         }
 
         static bool PutAway(Tool current)

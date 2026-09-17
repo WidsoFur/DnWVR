@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using DnWVR.XR;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 
 namespace DnWVR.VR
@@ -59,7 +58,6 @@ namespace DnWVR.VR
         /// </summary>
         public static float SpringLift = 0.5f;
 
-        static MelonLogger.Instance s_log;
         static AccessTools.FieldRef<MassSpringController, float> s_bottomOffset, s_cylinderHeight, s_springLength;
         static AccessTools.FieldRef<MassSpringController, Transform> s_baseRef;
         static AccessTools.FieldRef<MassSpringController, LocomotionPID> s_springPid;
@@ -93,9 +91,8 @@ namespace DnWVR.VR
         /// <summary>The scene's player body has been taken over.</summary>
         public static bool Attached => s_msc != null;
 
-        public static void Install(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        public static void Install(HarmonyLib.Harmony harmony)
         {
-            s_log = log;
             s_bottomOffset = AccessTools.FieldRefAccess<MassSpringController, float>("defaultBottomOffset");
             s_cylinderHeight = AccessTools.FieldRefAccess<MassSpringController, float>("defaultCapsuleHeight");
             s_springLength = AccessTools.FieldRefAccess<MassSpringController, float>("defaultSpringLength");
@@ -107,7 +104,7 @@ namespace DnWVR.VR
             catch (Exception e)
             {
                 s_springPid = null;
-                log.Warning("[PlayerBody] the floating spring's damping is not reachable; landings keep the game's bounce: " + e.Message);
+                Log.Warning("[PlayerBody] the floating spring's damping is not reachable; landings keep the game's bounce: " + e.Message);
             }
             s_baseRef = AccessTools.FieldRefAccess<MassSpringController, Transform>("baseTransform");
             harmony.Patch(AccessTools.Method(typeof(MassSpringController), "FixedUpdate"),
@@ -117,7 +114,7 @@ namespace DnWVR.VR
             harmony.Patch(AccessTools.Method(typeof(LocomotionRaycastTools), nameof(LocomotionRaycastTools.Stuck)),
                 prefix: new HarmonyMethod(typeof(PlayerBody).GetMethod(nameof(Stuck_Prefix), AnyStatic)));
             VRRig.AfterCameraWrite += Follow;
-            log.Msg("[PlayerBody] installed");
+            Log.Msg("[PlayerBody] installed");
         }
 
         /// <summary>Takes over the scene's player body (after XR starts and after each scene load); safe to call repeatedly.</summary>
@@ -148,7 +145,7 @@ namespace DnWVR.VR
                 s_ledgeUntil = 0f;
                 s_standingOn = null;
                 s_mask = CollisionMask(msc.gameObject.layer);
-                s_log?.Msg($"[PlayerBody] {s_root.name}: game radius {s_gameRadius:0.00} m, push speed {s_gamePushSpeed:0.#} m/s, spring damping {s_gameSpringDamping:0.##}, collides with 0x{s_mask:X}");
+                Log.Msg($"[PlayerBody] {s_root.name}: game radius {s_gameRadius:0.00} m, push speed {s_gamePushSpeed:0.#} m/s, spring damping {s_gameSpringDamping:0.##}, collides with 0x{s_mask:X}");
             }
             ApplySettings();
         }

@@ -261,11 +261,11 @@ namespace DnWVR.Diag
                 foreach (var d in Directory.GetDirectories(subsystemsDir)) sb.AppendLine($"  - {System.IO.Path.GetFileName(d)}");
         }
 
-        public static void LogXRDescriptors(MelonLogger.Instance log)
+        public static void LogXRDescriptors()
         {
             var sb = new StringBuilder();
             LogXRDescriptorsTo(sb);
-            log.Msg(sb.ToString());
+            Log.Msg(sb.ToString());
         }
 
         static void LogXRDescriptorsTo(StringBuilder sb)

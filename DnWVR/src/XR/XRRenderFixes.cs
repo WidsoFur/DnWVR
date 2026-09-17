@@ -18,7 +18,6 @@ namespace DnWVR.XR
         const BindingFlags AnyStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
         const BindingFlags AnyInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
-        static MelonLogger.Instance s_log;
         static bool s_patched;
         static object s_lastLoader;
         static FieldInfo s_wrappedCommandBuffer;
@@ -26,10 +25,9 @@ namespace DnWVR.XR
         static bool s_loggedFallback;
 
         /// <summary>Call after XR starts and after every scene load (URP may re-create the occlusion material).</summary>
-        public static void Apply(MelonLogger.Instance log, bool singlePassInstanced)
+        public static void Apply(bool singlePassInstanced)
         {
-            s_log = log;
-            if (!s_patched) Patch(DnWVRMod.Instance.HarmonyInstance, log);
+            if (!s_patched) Patch(DnWVRMod.Instance.HarmonyInstance);
             try
             {
                 var t = typeof(XRSystem);
@@ -49,22 +47,22 @@ namespace DnWVR.XR
                 if (firstForThisSession)
                 {
                     s_lastLoader = XRBootstrap.Loader;
-                    LogShaderDiagnostics(log);
-                    log.Msg($"[XRRenderFixes] visibilityMesh={InvokeStatic(t, "GetUseVisibilityMesh")} occlusionScale={InvokeStatic(t, "GetOcclusionMeshScale")} " +
+                    LogShaderDiagnostics();
+                    Log.Msg($"[XRRenderFixes] visibilityMesh={InvokeStatic(t, "GetUseVisibilityMesh")} occlusionScale={InvokeStatic(t, "GetOcclusionMeshScale")} " +
                             $"singlePassAllowed={XRSystem.singlePassAllowed} mirrorMode={InvokeStatic(t, "GetMirrorViewMode")}");
                     MelonCoroutines.Start(DumpLayoutForFrames(5));
                 }
             }
             catch (Exception e)
             {
-                log.Error("[XRRenderFixes] apply failed: " + e);
+                Log.Error("[XRRenderFixes] apply failed: " + e);
             }
         }
 
         static void SetStatic(Type t, string name, object value)
         {
             var f = t.GetField(name, AnyStatic);
-            if (f == null) { s_log?.Warning($"[XRRenderFixes] {t.Name}.{name} not found"); return; }
+            if (f == null) { Log.Warning($"[XRRenderFixes] {t.Name}.{name} not found"); return; }
             f.SetValue(null, value);
         }
 
@@ -74,7 +72,7 @@ namespace DnWVR.XR
             catch { return "?"; }
         }
 
-        static void Patch(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
+        static void Patch(HarmonyLib.Harmony harmony)
         {
             s_patched = true;
             try
@@ -92,11 +90,11 @@ namespace DnWVR.XR
                     harmony.Patch(m, new HarmonyMethod(typeof(XRRenderFixes).GetMethod(prefix, AnyStatic)));
                     n++;
                 }
-                log.Msg($"[XRRenderFixes] guarded {n} XRPass.RenderVisibleMeshCustomMaterial overload(s)");
+                Log.Msg($"[XRRenderFixes] guarded {n} XRPass.RenderVisibleMeshCustomMaterial overload(s)");
             }
             catch (Exception e)
             {
-                log.Error("[XRRenderFixes] visible-mesh guard failed: " + e);
+                Log.Error("[XRRenderFixes] visible-mesh guard failed: " + e);
             }
         }
 
@@ -121,20 +119,20 @@ namespace DnWVR.XR
             if (!s_loggedFallback)
             {
                 s_loggedFallback = true;
-                s_log?.Warning($"[XRRenderFixes] visible-mesh draw with missing pass {wantedPass} on {(material != null ? material.shader.name : "null")} " +
-                               $"(passCount {(material != null ? material.passCount : 0)}): drawing a full-screen triangle with pass 0 instead");
+                Log.Warning($"[XRRenderFixes] visible-mesh draw with missing pass {wantedPass} on {(material != null ? material.shader.name : "null")} " +
+                            $"(passCount {(material != null ? material.passCount : 0)}): drawing a full-screen triangle with pass 0 instead");
             }
             if (cmd == null || material == null || material.passCount == 0) return;
             // Procedural full-screen triangle with pass 0, the same draw Blitter.BlitTexture does.
             cmd.DrawProcedural(Matrix4x4.identity, material, 0, MeshTopology.Triangles, 3, 1, block);
         }
 
-        static void LogShaderDiagnostics(MelonLogger.Instance log)
+        static void LogShaderDiagnostics()
         {
             void Report(string shaderName, string xrPassName)
             {
                 var sh = Shader.Find(shaderName);
-                if (sh == null) { log.Msg($"[XRRenderFixes] shader '{shaderName}': not in build"); return; }
+                if (sh == null) { Log.Msg($"[XRRenderFixes] shader '{shaderName}': not in build"); return; }
                 int xrPass = -1;
                 if (!string.IsNullOrEmpty(xrPassName))
                 {
@@ -142,7 +140,7 @@ namespace DnWVR.XR
                     xrPass = mat.FindPass(xrPassName);
                     UnityEngine.Object.Destroy(mat);
                 }
-                log.Msg($"[XRRenderFixes] shader '{shaderName}': supported={sh.isSupported} passCount={sh.passCount}" +
+                Log.Msg($"[XRRenderFixes] shader '{shaderName}': supported={sh.isSupported} passCount={sh.passCount}" +
                         (string.IsNullOrEmpty(xrPassName) ? "" : $" '{xrPassName}' index={xrPass}"));
             }
             Report("Hidden/Universal Render Pipeline/UberPost", "UberPostXR");
@@ -162,7 +160,7 @@ namespace DnWVR.XR
             }
             if (!XRSystem.displayActive)
             {
-                s_log?.Msg("[XRRenderFixes] display not active after 30 s; no layout dump");
+                Log.Msg("[XRRenderFixes] display not active after 30 s; no layout dump");
                 yield break;
             }
             yield return null;
@@ -170,7 +168,7 @@ namespace DnWVR.XR
             XRSystem.dumpDebugInfo = true;
             for (int i = 0; i < frames; i++) yield return null;
             XRSystem.dumpDebugInfo = false;
-            s_log?.Msg($"[XRRenderFixes] layout dump done; visible-mesh fallback draws so far: {s_fallbackDraws}");
+            Log.Msg($"[XRRenderFixes] layout dump done; visible-mesh fallback draws so far: {s_fallbackDraws}");
         }
     }
 }

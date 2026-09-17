@@ -222,7 +222,7 @@ namespace DnWVR.VR
             }
             catch (Exception e)
             {
-                if (!s_loggedPenetrationError) { s_loggedPenetrationError = true; s_log?.Warning("[Touch] ComputePenetration failed; using the ray fallback: " + e.Message); }
+                if (!s_loggedPenetrationError) { s_loggedPenetrationError = true; Log.Warning("[Touch] ComputePenetration failed; using the ray fallback: " + e.Message); }
                 return false;
             }
         }
