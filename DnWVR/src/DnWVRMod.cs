@@ -24,7 +24,7 @@ namespace DnWVR
         public static MelonPreferences_Entry<bool> PrefDumpOnSceneLoad;
         public static MelonPreferences_Entry<int> PrefStartupRetries;
         public static MelonPreferences_Entry<bool> PrefSmoothTurn;
-        public static MelonPreferences_Entry<float> PrefSnapTurnDegrees;
+        public static MelonPreferences_Entry<float> PrefSnapTurnDegrees, PrefSmoothTurnSpeed;
         public static MelonPreferences_Entry<bool> PrefDebugAutoStartLevel;
         public static MelonPreferences_Entry<string> PrefPlapperOffsetPos, PrefPlapperOffsetEuler,
             PrefToolOffsetPos, PrefToolOffsetEuler, PrefSprayerOffsetPos, PrefLadderOffsetPos;
@@ -87,8 +87,14 @@ namespace DnWVR
             PrefDumpOnSceneLoad = Prefs.CreateEntry("DumpOnSceneLoad", false, "Dump scene diagnostics after each scene load");
             PrefStartupRetries = Prefs.CreateEntry("StartupRetries", 12,
                 "How many times (5 s apart) to retry OpenXR init at startup while the headset is not ready");
-            PrefSmoothTurn = Prefs.CreateEntry("SmoothTurn", false, "Smooth turn instead of snap turn on the right stick");
-            PrefSnapTurnDegrees = Prefs.CreateEntry("SnapTurnDegrees", 45f, "Snap turn angle in degrees");
+            PrefSmoothTurn = Prefs.CreateEntry("SmoothTurn", false,
+                "Turn smoothly while the right stick is held instead of snapping by a step. The VR section of the " +
+                "options screen sets this too, and the row under it is whichever of the next two settings applies");
+            PrefSnapTurnDegrees = Prefs.CreateEntry("SnapTurnDegrees", 45f,
+                "Degrees turned by one flick of the right stick when turning snaps");
+            PrefSmoothTurnSpeed = Prefs.CreateEntry("SmoothTurnSpeed", 120f,
+                "Degrees a second the world turns while the right stick is held, when turning is smooth. Lower is " +
+                "gentler on a stomach new to VR");
             PrefDebugAutoStartLevel = Prefs.CreateEntry("DebugAutoStartLevel", false,
                 "Debug: automatically start a new game (first empty slot) from the main menu");
             PrefPlapperOffsetPos = Prefs.CreateEntry("PlapperOffsetPos", "0,0,0",
@@ -470,7 +476,8 @@ namespace DnWVR
         static void ApplyTunablePrefs()
         {
             VRInput.SmoothTurn = PrefSmoothTurn.Value;
-            VRInput.SnapTurnDegrees = PrefSnapTurnDegrees.Value;
+            VRInput.SnapTurnDegrees = Mathf.Clamp(PrefSnapTurnDegrees.Value, 1f, 180f);
+            VRInput.SmoothTurnDegPerSec = Mathf.Clamp(PrefSmoothTurnSpeed.Value, 10f, 720f);
             VRHands.PhysicalHands = PrefPhysicalHands.Value;
             VRHands.SecondHand = PrefSecondHand.Value;
             VRHands.RestOnPenis = PrefRestOnPenis.Value;

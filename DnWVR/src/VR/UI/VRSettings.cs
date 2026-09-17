@@ -18,8 +18,13 @@ namespace DnWVR.VR
         /// <summary>Range the height row allows, in centimetres.</summary>
         public const int MinHeightCm = 120, MaxHeightCm = 220;
 
+        const float MinSnap = 5f, MaxSnap = 90f, SnapStep = 5f;
+        const float MinTurnSpeed = 30f, MaxTurnSpeed = 360f, TurnSpeedStep = 10f;
+
         const string TitleName = "DnWVR_VRTitle";
         const string HeightRowName = "DnWVR_HeightRow";
+        const string TurnRowName = "DnWVR_TurnRow";
+        const string TurnAmountRowName = "DnWVR_TurnAmountRow";
 
         public static VRSettings Instance { get; private set; }
 
@@ -28,7 +33,8 @@ namespace DnWVR.VR
         static AccessTools.FieldRef<ScriptableSettingSpawner, bool> s_ready;
 
         ScriptableSettingSpawner _spawner;
-        TMP_InputField _height;
+        TMP_InputField _height, _turnMode, _turnAmount;
+        TextMeshProUGUI _turnAmountLabel;
         int _sweep;
 
         public static void Ensure(MelonLogger.Instance log)
@@ -70,11 +76,14 @@ namespace DnWVR.VR
                 return;
             }
             // The game respawns its own rows when the language changes; ours belong under them either way.
-            if (title.GetSiblingIndex() < content.childCount - 2)
+            if (title.GetSiblingIndex() < content.childCount - 4)
             {
                 title.SetAsLastSibling();
-                var row = content.Find(HeightRowName);
-                if (row != null) row.SetAsLastSibling();
+                foreach (var name in new[] { HeightRowName, TurnRowName, TurnAmountRowName })
+                {
+                    var row = content.Find(name);
+                    if (row != null) row.SetAsLastSibling();
+                }
             }
         }
 
@@ -83,18 +92,17 @@ namespace DnWVR.VR
             try
             {
                 var titlePrefab = s_groupTitle(_spawner);
-                var inputPrefab = s_textInput(_spawner);
-                if (titlePrefab == null || inputPrefab == null) return;
+                if (titlePrefab == null || s_textInput(_spawner) == null) return;
 
                 var title = Instantiate(titlePrefab, content);
                 title.name = TitleName;
                 title.SetActive(true);
                 SetLabel(title, "VR");
 
-                var row = Instantiate(inputPrefab, content);
-                row.name = HeightRowName;
-                row.SetActive(true);
-                BuildHeightRow(row);
+                BuildHeightRow(NewRow(content, HeightRowName, "Height (cm)"));
+                BuildTurnRow(NewRow(content, TurnRowName, "Turning"));
+                BuildTurnAmountRow(NewRow(content, TurnAmountRowName, string.Empty));
+                Refresh();
                 s_log?.Msg("[VRSettings] VR section added to the options screen");
             }
             catch (Exception e)
@@ -105,31 +113,45 @@ namespace DnWVR.VR
             }
         }
 
+        /// <summary>A copy of the game's own text-input row, its label set and its field parked in the value column.</summary>
+        GameObject NewRow(Transform content, string name, string label)
+        {
+            var row = Instantiate(s_textInput(_spawner), content);
+            row.name = name;
+            row.SetActive(true);
+            SetLabel(row, label);
+            if (row.transform.Find("Label") is RectTransform text) Place(text, 0f, 0.44f);
+            if (row.transform.Find("TextInput") is RectTransform field) Place(field, 0.50f, 0.62f);
+            return row;
+        }
+
         /// <summary>Your height in centimetres, with a stepper either side of it and a button that measures it.</summary>
         void BuildHeightRow(GameObject row)
         {
-            SetLabel(row, "Height (cm)");
-            var label = row.transform.Find("Label") as RectTransform;
-            var field = row.transform.Find("TextInput") as RectTransform;
-            if (label != null) Place(label, 0f, 0.44f);
-            if (field == null) return;
-            Place(field, 0.50f, 0.62f);
+            _height = Number(row, 3, text => SetHeight(int.TryParse(text, out int cm) ? cm : VRRig.HeightCm));
+            Stepper(row, () => SetHeight(VRRig.HeightCm - 1), () => SetHeight(VRRig.HeightCm + 1));
+            MakeButton((RectTransform)row.transform, "Calibrate", "Calibrate", Style(row), 0.72f, 1f)
+                .onClick.AddListener(Calibrate);
+        }
 
-            _height = field.GetComponent<TMP_InputField>();
-            var style = field.GetComponent<Image>();
-            if (_height != null)
+        /// <summary>Snap turning or smooth; the row under it follows whichever is chosen.</summary>
+        void BuildTurnRow(GameObject row)
+        {
+            _turnMode = Number(row, 0, null);
+            if (_turnMode != null)
             {
-                _height.contentType = TMP_InputField.ContentType.IntegerNumber;
-                _height.characterLimit = 3;
-                if (_height.textComponent != null) _height.textComponent.alignment = TextAlignmentOptions.Center;
-                _height.onEndEdit.AddListener(text => SetHeight(int.TryParse(text, out int cm) ? cm : VRRig.HeightCm));
+                _turnMode.readOnly = true;
+                _turnMode.interactable = false;
             }
+            Stepper(row, () => SetSmoothTurn(!VRInput.SmoothTurn), () => SetSmoothTurn(!VRInput.SmoothTurn));
+        }
 
-            var rect = (RectTransform)row.transform;
-            MakeButton(rect, "Down", "<", style, 0.44f, 0.50f).onClick.AddListener(() => SetHeight(VRRig.HeightCm - 1));
-            MakeButton(rect, "Up", ">", style, 0.62f, 0.68f).onClick.AddListener(() => SetHeight(VRRig.HeightCm + 1));
-            MakeButton(rect, "Calibrate", "Calibrate", style, 0.72f, 1f).onClick.AddListener(Calibrate);
-            ShowHeight();
+        /// <summary>Degrees per snap, or degrees a second while the stick is held - whichever the row above asks for.</summary>
+        void BuildTurnAmountRow(GameObject row)
+        {
+            _turnAmountLabel = row.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
+            _turnAmount = Number(row, 3, text => SetTurnAmount(float.TryParse(text, out float v) ? v : TurnAmount()));
+            Stepper(row, () => SetTurnAmount(TurnAmount() - TurnStep()), () => SetTurnAmount(TurnAmount() + TurnStep()));
         }
 
         /// <summary>Takes the height straight off the headset, which the floor-level tracking origin measures for us.</summary>
@@ -146,21 +168,86 @@ namespace DnWVR.VR
 
         void SetHeight(int cm)
         {
-            cm = Mathf.Clamp(cm, MinHeightCm, MaxHeightCm);
-            VRRig.HeightCm = cm;
-            if (DnWVRMod.PrefPlayerHeightCm != null)
-            {
-                DnWVRMod.PrefPlayerHeightCm.Value = cm;
-                try { MelonPreferences.Save(); }
-                catch (Exception e) { s_log?.Warning("[VRSettings] could not save the height: " + e.Message); }
-            }
-            ShowHeight();
+            VRRig.HeightCm = Mathf.Clamp(cm, MinHeightCm, MaxHeightCm);
+            Save(DnWVRMod.PrefPlayerHeightCm, VRRig.HeightCm);
+            Refresh();
         }
 
-        void ShowHeight()
+        void SetSmoothTurn(bool smooth)
         {
-            if (_height != null) _height.SetTextWithoutNotify(VRRig.HeightCm.ToString());
+            VRInput.SmoothTurn = smooth;
+            Save(DnWVRMod.PrefSmoothTurn, smooth);
+            Refresh();
         }
+
+        void SetTurnAmount(float value)
+        {
+            if (VRInput.SmoothTurn)
+            {
+                VRInput.SmoothTurnDegPerSec = Mathf.Clamp(value, MinTurnSpeed, MaxTurnSpeed);
+                Save(DnWVRMod.PrefSmoothTurnSpeed, VRInput.SmoothTurnDegPerSec);
+            }
+            else
+            {
+                VRInput.SnapTurnDegrees = Mathf.Clamp(value, MinSnap, MaxSnap);
+                Save(DnWVRMod.PrefSnapTurnDegrees, VRInput.SnapTurnDegrees);
+            }
+            Refresh();
+        }
+
+        static float TurnAmount() => VRInput.SmoothTurn ? VRInput.SmoothTurnDegPerSec : VRInput.SnapTurnDegrees;
+
+        static float TurnStep() => VRInput.SmoothTurn ? TurnSpeedStep : SnapStep;
+
+        /// <summary>Writes every row from the settings themselves, so the cfg and the screen can never disagree.</summary>
+        void Refresh()
+        {
+            Show(_height, VRRig.HeightCm.ToString());
+            Show(_turnMode, VRInput.SmoothTurn ? "Smooth" : "Snap");
+            Show(_turnAmount, Mathf.RoundToInt(TurnAmount()).ToString());
+            if (_turnAmountLabel != null)
+                _turnAmountLabel.text = VRInput.SmoothTurn ? "Turn speed (°/s)" : "Snap angle (°)";
+        }
+
+        static void Show(TMP_InputField field, string text)
+        {
+            if (field != null) field.SetTextWithoutNotify(text);
+        }
+
+        static void Save<T>(MelonPreferences_Entry<T> entry, T value)
+        {
+            if (entry == null) return;
+            entry.Value = value;
+            try { MelonPreferences.Save(); }
+            catch (Exception e) { s_log?.Warning("[VRSettings] could not save a setting: " + e.Message); }
+        }
+
+        /// <summary>The row's value field: digits only when it takes typing, a plain display when it does not.</summary>
+        static TMP_InputField Number(GameObject row, int digits, UnityEngine.Events.UnityAction<string> edited)
+        {
+            var field = row.transform.Find("TextInput")?.GetComponent<TMP_InputField>();
+            if (field == null) return null;
+            // A row the player types into takes digits only; one that merely shows a word must not be validated.
+            if (digits > 0)
+            {
+                field.contentType = TMP_InputField.ContentType.IntegerNumber;
+                field.characterLimit = digits;
+            }
+            if (field.textComponent != null) field.textComponent.alignment = TextAlignmentOptions.Center;
+            if (edited != null) field.onEndEdit.AddListener(edited);
+            return field;
+        }
+
+        /// <summary>The arrows either side of a row's value: left takes it down, right up.</summary>
+        void Stepper(GameObject row, UnityEngine.Events.UnityAction down, UnityEngine.Events.UnityAction up)
+        {
+            var rect = (RectTransform)row.transform;
+            var style = Style(row);
+            MakeButton(rect, "Down", "<", style, 0.44f, 0.50f).onClick.AddListener(down);
+            MakeButton(rect, "Up", ">", style, 0.62f, 0.68f).onClick.AddListener(up);
+        }
+
+        static Image Style(GameObject row) => row.transform.Find("TextInput")?.GetComponent<Image>();
 
         Button MakeButton(RectTransform row, string name, string caption, Image style, float left, float right)
         {
