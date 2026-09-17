@@ -87,6 +87,9 @@ namespace DnWVR.VR
         /// <summary>Root-local horizontal offset of the capsule and the feet from the rigidbody.</summary>
         public static Vector3 Offset => s_offset;
 
+        /// <summary>The scene's player body has been taken over.</summary>
+        public static bool Attached => s_msc != null;
+
         public static void Install(HarmonyLib.Harmony harmony, MelonLogger.Instance log)
         {
             s_log = log;

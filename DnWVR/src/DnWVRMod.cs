@@ -338,21 +338,48 @@ namespace DnWVR
             }
             if (XRBootstrap.IsRunning)
             {
-                XRRenderFixes.Apply(LoggerInstance, PrefSinglePassInstanced.Value);
-                VRInput.DisableStockXRBindingsEverywhere();
-                VRInput.AddDevice();
-                InputPatches.ForceControllerGlyphs();
-                VRHands.EnsureAnchors();
-                VRHands.AttachGameHands();
-                PlayerBody.Attach();
-                SexScene.Attach();
-                RenderTweaks.ApplyToScene(LoggerInstance);
-                VRUI.ConvertAll();
+                Guarded("XRRenderFixes", () => XRRenderFixes.Apply(LoggerInstance, PrefSinglePassInstanced.Value));
+                Guarded("VRInput", () => { VRInput.DisableStockXRBindingsEverywhere(); VRInput.AddDevice(); });
+                Guarded("InputPatches", InputPatches.ForceControllerGlyphs);
+                Guarded("RenderTweaks", () => RenderTweaks.ApplyToScene(LoggerInstance));
+                Guarded("VRUI", VRUI.ConvertAll);
+                yield return TakeOverPlayer(sceneName);
             }
             if (PrefDumpOnSceneLoad.Value)
             {
                 yield return new WaitForSeconds(1.5f);
                 SafeDump(sceneName);
+            }
+        }
+
+        // The hands, the body and the sex scenes all hang off the player, and a scene does not always have one the
+        // frame after it loads. A miss used to be silent and final - the paws simply never appeared - so keep asking for
+        // a while, and leave a line in the log either way. F11 twice does the same by hand.
+        IEnumerator TakeOverPlayer(string sceneName)
+        {
+            const float giveUpAfter = 15f;
+            float start = Time.realtimeSinceStartup;
+            while (true)
+            {
+                Guarded("VRHands", () => { VRHands.EnsureAnchors(); VRHands.AttachGameHands(); });
+                Guarded("PlayerBody", PlayerBody.Attach);
+                Guarded("SexScene", SexScene.Attach);
+                float waited = Time.realtimeSinceStartup - start;
+                if (VRHands.Attached)
+                {
+                    if (waited > 0.5f) LoggerInstance.Msg($"Hands took {waited:0.0} s to appear in {sceneName}");
+                    yield break;
+                }
+                if (waited > giveUpAfter)
+                {
+                    if (PlayerBody.Attached)
+                        LoggerInstance.Warning($"{sceneName} has a player to walk with but no hands to wash with; " +
+                                               "press F11 twice to try again, and please report the log");
+                    else
+                        LoggerInstance.Msg($"{sceneName} has no player to take over (menus and the credits have none)");
+                    yield break;
+                }
+                yield return new WaitForSeconds(0.25f);
             }
         }
 
