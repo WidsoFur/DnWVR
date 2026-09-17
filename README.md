@@ -26,20 +26,24 @@ and dialogue become panels in front of you. Nothing about the game itself is rep
 
 ## Plans
 
-- **Other mod loaders** - the mod is MelonLoader-only today; the game hooks are plain Harmony patches, so a BepInEx
-  entry point is mostly packaging work. Krazen's mod loader is planned too.
+- **Other mod loaders** - MelonLoader and BepInEx are supported; Krazen's mod loader is planned too.
 - **Full-body tracking** - hips and feet from extra trackers, so your body stands the way you do.
 - **Haptics on touch** - a slap, a stroke or a scrub answered by the controller, not only by sound.
 
 ## Install
 
-1. Install [MelonLoader 0.7.3](https://github.com/LavaGang/MelonLoader/releases/tag/v0.7.3) into the game folder
-   (the one with `DragNWash.exe`), either with the installer or by unpacking `MelonLoader.x64.zip` there.
-2. Download `DnWVR-<version>.zip` from [Releases](../../releases/latest) and extract it into the same folder,
-   merging the folders it brings: `Mods\DnWVR.dll` plus Unity's OpenXR files in `DragNWash_Data`.
+1. Install one mod loader into the game folder (the one with `DragNWash.exe`) - **not both**, or the game loads the
+   mod twice and patches itself twice:
+   - [MelonLoader 0.7.3](https://github.com/LavaGang/MelonLoader/releases/tag/v0.7.3), with the installer or by
+     unpacking `MelonLoader.x64.zip` there, or
+   - [BepInEx 5.4.23.5](https://github.com/BepInEx/BepInEx/releases) (`BepInEx_win_x64`), unpacked there and run once
+     so it builds its folders.
+2. Download `DnWVR-<version>.zip` from [Releases](../../releases/latest) and extract it into the same folder, merging
+   the folders it brings: the DLL for your loader plus Unity's OpenXR files in `DragNWash_Data`.
 3. Start your VR runtime, then launch the game from Steam. VR starts on its own.
 
-To uninstall, delete `Mods\DnWVR.dll`.
+Settings live in `UserData\MelonPreferences.cfg` under MelonLoader and in `BepInEx\config\com.widsofur.dnwvr.cfg`
+under BepInEx. To uninstall, delete `Mods\DnWVR.dll` or `BepInEx\plugins\DnWVR`.
 
 ## Controls
 
@@ -60,14 +64,18 @@ speed, hand offsets, body size, the pace of the sex scenes, the desktop view. Ed
 
 ## Build
 
-You need the [.NET SDK](https://dotnet.microsoft.com/download) 8.0 or newer and the game with MelonLoader; Unity is
-not needed, as the OpenXR files ship in [`openxr/`](openxr/).
+You need the [.NET SDK](https://dotnet.microsoft.com/download) 8.0 or newer and the game. Unity is not needed, as
+the OpenXR files ship in [`openxr/`](openxr/), and neither is BepInEx, as the assemblies it is compiled against ship
+in [`refs/`](refs/).
 
 ```bat
 dotnet build -c Release
 ```
 
-The DLL lands in `Mods` in the game folder, together with the OpenXR files if that game has none yet. If the game
+That builds the mod for both loaders from one source tree: `DnWVR.dll` for MelonLoader and `DnWVR.BepInEx.dll` for
+BepInEx, differing only in the four files under [`DnWVR/src/Loader`](DnWVR/src/Loader). Each is deployed into the game
+if its loader is installed there, so having one of them is enough; `-p:SkipDeploy=true` deploys neither. The OpenXR
+files are laid down with them if that game has none yet. If the game
 is not in the default Steam path, put your own in `Directory.Build.user.props`:
 
 ```xml
