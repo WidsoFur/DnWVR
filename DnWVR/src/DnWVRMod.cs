@@ -3,31 +3,28 @@ using System.Collections;
 using DnWVR.Diag;
 using DnWVR.VR;
 using DnWVR.XR;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[assembly: MelonInfo(typeof(DnWVR.DnWVRMod), "DnWVR", "0.1.0", "WidsoFur")]
-[assembly: MelonGame("Gator Dragon Games", "DragNWash")]
-
 namespace DnWVR
 {
-    /// <summary>MelonLoader entry point: preferences, patch setup, OpenXR start/stop, per-scene setup and debug hotkeys.</summary>
-    public class DnWVRMod : MelonMod
+    /// <summary>
+    /// The mod itself: preferences, patch setup, OpenXR start and stop, per-scene setup and the debug hotkeys. A loader
+    /// in src\Loader calls the four methods below and otherwise stays out of the way.
+    /// </summary>
+    public static class DnWVRMod
     {
-        public static DnWVRMod Instance { get; private set; }
 
 
         /// <summary>Log cutscene action changes and controller/interaction decisions (copied from Prefs.DebugInteractionLog).</summary>
         public static bool DebugInteractionLog = false;
 
-        bool _lateLatchHooked;
-        int _cameraSweep;
+        static bool s_lateLatchHooked;
+        static int s_cameraSweep;
 
-        public override void OnInitializeMelon()
+        /// <summary>Everything that happens once, when the game and the loader are up.</summary>
+        public static void Initialize()
         {
-            Instance = this;
-            Log.Bind(LoggerInstance);
             Prefs.Create();
             ApplyTunablePrefs();
 
@@ -39,27 +36,27 @@ namespace DnWVR
             InstallModules();
 
             if (Prefs.EnableVR.Value)
-                MelonCoroutines.Start(StartXRWhenReady());
+                Host.StartCoroutine(StartXRWhenReady());
         }
 
         /// <summary>Each module binds game members by name; a renamed member must not take the whole mod down.</summary>
-        void InstallModules()
+        static void InstallModules()
         {
-            Guarded("CameraPatches", () => CameraPatches.Apply(HarmonyInstance));
-            Guarded("InputPatches", () => InputPatches.Apply(HarmonyInstance));
-            Guarded("HandPatches", () => HandPatches.Apply(HarmonyInstance));
-            Guarded("RenderTweaks", () => RenderTweaks.ApplyPatches(HarmonyInstance));
-            Guarded("VRUI", () => { VRUI.Initialize(); VRUI.ApplyPatches(HarmonyInstance); });
-            Guarded("DialogueVR", () => DialogueVR.Apply(HarmonyInstance));
+            Guarded("CameraPatches", () => CameraPatches.Apply(Host.Harmony));
+            Guarded("InputPatches", () => InputPatches.Apply(Host.Harmony));
+            Guarded("HandPatches", () => HandPatches.Apply(Host.Harmony));
+            Guarded("RenderTweaks", () => RenderTweaks.ApplyPatches(Host.Harmony));
+            Guarded("VRUI", () => { VRUI.Initialize(); VRUI.ApplyPatches(Host.Harmony); });
+            Guarded("DialogueVR", () => DialogueVR.Apply(Host.Harmony));
             Guarded("VRHands", () => VRHands.Initialize());
-            Guarded("PlayerBody", () => PlayerBody.Install(HarmonyInstance));
-            Guarded("SexScene", () => SexScene.Install(HarmonyInstance));
+            Guarded("PlayerBody", () => PlayerBody.Install(Host.Harmony));
+            Guarded("SexScene", () => SexScene.Install(Host.Harmony));
             Guarded("VRInput", () => VRInput.Initialize());
-            Guarded("DesktopMirror", () => DesktopMirror.Install(HarmonyInstance));
+            Guarded("DesktopMirror", () => DesktopMirror.Install(Host.Harmony));
             Guarded("DesktopView", () => DesktopView.Install());
         }
 
-        IEnumerator StartXRWhenReady()
+        static IEnumerator StartXRWhenReady()
         {
             // Graphics must be fully initialized before the loader is created.
             yield return null;
@@ -77,13 +74,13 @@ namespace DnWVR
             }
         }
 
-        bool StartXR()
+        static bool StartXR()
         {
             if (!XRBootstrap.Start(Prefs.SinglePassInstanced.Value)) return false;
-            if (!_lateLatchHooked)
+            if (!s_lateLatchHooked)
             {
                 Application.onBeforeRender += VRRig.LateLatch;
-                _lateLatchHooked = true;
+                s_lateLatchHooked = true;
             }
             AttachStaticCameraFollower();
             XRRenderFixes.Apply(Prefs.SinglePassInstanced.Value);
@@ -104,23 +101,23 @@ namespace DnWVR
             VRSettings.Ensure();
             RenderTweaks.ApplyToScene();
             VRUI.ConvertAll();
-            MelonCoroutines.Start(StereoDiagnosticsAfterDelay());
+            Host.StartCoroutine(StereoDiagnosticsAfterDelay());
             return true;
         }
 
-        IEnumerator StereoDiagnosticsAfterDelay()
+        static IEnumerator StereoDiagnosticsAfterDelay()
         {
             // The session becomes visible/focused a moment after StartSubsystems; report once it is.
             yield return new WaitForSecondsRealtime(3f);
             if (XRBootstrap.IsRunning) RenderTweaks.LogStereoState();
         }
 
-        void StopXR()
+        static void StopXR()
         {
-            if (_lateLatchHooked)
+            if (s_lateLatchHooked)
             {
                 Application.onBeforeRender -= VRRig.LateLatch;
-                _lateLatchHooked = false;
+                s_lateLatchHooked = false;
             }
             VRRig.RestoreNearClip();
             VRHands.DetachGameHands(); // also destroys the twin hand
@@ -133,7 +130,8 @@ namespace DnWVR
             XRBootstrap.Stop();
         }
 
-        public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+        /// <summary>A scene has finished loading.</summary>
+        public static void SceneLoaded(int buildIndex, string sceneName)
         {
             Log.Msg($"Scene loaded: {sceneName} (#{buildIndex})");
             VRFader.Flash(0.8f); // hide the first frames of a new scene while the rig re-aligns
@@ -145,10 +143,10 @@ namespace DnWVR
             ItemLaser.ResetState();
             HandPatches.ResetTouchState();
             VRUI.OnSceneChanged();
-            MelonCoroutines.Start(AfterSceneLoad(sceneName));
+            Host.StartCoroutine(AfterSceneLoad(sceneName));
         }
 
-        IEnumerator AfterSceneLoad(string sceneName)
+        static IEnumerator AfterSceneLoad(string sceneName)
         {
             yield return null;
             AdoptSceneCamera();
@@ -177,7 +175,7 @@ namespace DnWVR
         // The hands, the body and the sex scenes all hang off the player, and a scene does not always have one the
         // frame after it loads. A miss used to be silent and final - the paws simply never appeared - so keep asking for
         // a while, and leave a line in the log either way. F11 twice does the same by hand.
-        IEnumerator TakeOverPlayer(string sceneName)
+        static IEnumerator TakeOverPlayer(string sceneName)
         {
             const float giveUpAfter = 15f;
             float start = Time.realtimeSinceStartup;
@@ -207,7 +205,7 @@ namespace DnWVR
 
         // A scene whose camera carries no MainCamera tag (the credits) leaves Camera.main null, and with it no head to
         // follow, no panels and no fade; the camera that renders the scene becomes the main one so VR works there too.
-        void AdoptSceneCamera()
+        static void AdoptSceneCamera()
         {
             if (Camera.main != null) return;
             Camera best = null;
@@ -231,12 +229,13 @@ namespace DnWVR
                 cam.gameObject.AddComponent<StaticCameraFollower>();
         }
 
-        public override void OnUpdate()
+        /// <summary>Every frame.</summary>
+        public static void Tick()
         {
             DesktopView.Tick();
             SceneWalk.Tick();
             // A camera can also appear after the scene load that adopted one (or after VR starts).
-            if (XRBootstrap.IsRunning && ++_cameraSweep % 30 == 0 && Camera.main == null) AdoptSceneCamera();
+            if (XRBootstrap.IsRunning && ++s_cameraSweep % 30 == 0 && Camera.main == null) AdoptSceneCamera();
 
             var kb = Keyboard.current;
             if (kb == null) return;
@@ -255,7 +254,7 @@ namespace DnWVR
             if (kb.f7Key.wasPressedThisFrame) DebugStartLevel();
             if (kb.f6Key.wasPressedThisFrame)
             {
-                MelonPreferences.Load();
+                Prefs.Reload();
                 ApplyTunablePrefs();
                 VRHands.ApplyOffsets();
                 PlayerBody.ApplySettings();
@@ -271,7 +270,7 @@ namespace DnWVR
             }
         }
 
-        void Guarded(string what, Action action)
+        static void Guarded(string what, Action action)
         {
             try { action(); }
             catch (Exception e) { Log.Error($"{what} failed to initialize: {e}"); }
@@ -344,7 +343,7 @@ namespace DnWVR
             catch { return Vector3.zero; }
         }
 
-        void DebugStartLevel()
+        static void DebugStartLevel()
         {
             try
             {
@@ -378,12 +377,13 @@ namespace DnWVR
             catch { return VRRig.RigYaw + VRRig.HmdLocalYaw; }
         }
 
-        public override void OnApplicationQuit()
+        /// <summary>The game is closing.</summary>
+        public static void Quit()
         {
             if (XRBootstrap.IsRunning) StopXR();
         }
 
-        private void SafeDump(string tag)
+        static void SafeDump(string tag)
         {
             try
             {

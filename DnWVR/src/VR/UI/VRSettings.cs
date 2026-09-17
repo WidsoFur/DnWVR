@@ -1,6 +1,5 @@
 using System;
 using HarmonyLib;
-using MelonLoader;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

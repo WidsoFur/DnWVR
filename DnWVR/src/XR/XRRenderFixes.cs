@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Reflection;
 using HarmonyLib;
-using MelonLoader;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -27,7 +26,7 @@ namespace DnWVR.XR
         /// <summary>Call after XR starts and after every scene load (URP may re-create the occlusion material).</summary>
         public static void Apply(bool singlePassInstanced)
         {
-            if (!s_patched) Patch(DnWVRMod.Instance.HarmonyInstance);
+            if (!s_patched) Patch(Host.Harmony);
             try
             {
                 var t = typeof(XRSystem);
@@ -50,7 +49,7 @@ namespace DnWVR.XR
                     LogShaderDiagnostics();
                     Log.Msg($"[XRRenderFixes] visibilityMesh={InvokeStatic(t, "GetUseVisibilityMesh")} occlusionScale={InvokeStatic(t, "GetOcclusionMeshScale")} " +
                             $"singlePassAllowed={XRSystem.singlePassAllowed} mirrorMode={InvokeStatic(t, "GetMirrorViewMode")}");
-                    MelonCoroutines.Start(DumpLayoutForFrames(5));
+                    Host.StartCoroutine(DumpLayoutForFrames(5));
                 }
             }
             catch (Exception e)

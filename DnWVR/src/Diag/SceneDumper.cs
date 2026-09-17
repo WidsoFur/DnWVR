@@ -4,8 +4,6 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using com.gatordragongames.washnwalk.tools;
-using MelonLoader;
-using MelonLoader.Utils;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -28,7 +26,7 @@ namespace DnWVR.Diag
 
         public static string DumpToFile(string tag)
         {
-            var dir = Path.Combine(MelonEnvironment.UserDataDirectory, "DnWVR");
+            var dir = Host.DataDir;
             Directory.CreateDirectory(dir);
             var scene = SceneManager.GetActiveScene().name;
             var path = Path.Combine(dir, $"dump_{scene}_{tag}_{DateTime.Now:HHmmss}.txt");

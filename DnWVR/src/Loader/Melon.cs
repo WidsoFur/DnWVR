@@ -1,4 +1,7 @@
+using System.Collections;
+using System.IO;
 using MelonLoader;
+using MelonLoader.Utils;
 
 namespace DnWVR
 {
@@ -46,5 +49,20 @@ namespace DnWVR
         internal static void Reload() => MelonPreferences.Load();
 
         internal static void Save() => MelonPreferences.Save();
+    }
+
+    /// <summary>What the mod asks of its loader beyond a log and a settings file.</summary>
+    public static class Host
+    {
+        // HarmonyLib is spelled out because `using MelonLoader;` brings a MelonLoader.Harmony namespace into scope here,
+        // which would shadow the type.
+        public static HarmonyLib.Harmony Harmony { get; private set; }
+
+        internal static void Bind(HarmonyLib.Harmony harmony) => Harmony = harmony;
+
+        public static void StartCoroutine(IEnumerator routine) => MelonCoroutines.Start(routine);
+
+        /// <summary>Where the F9 diagnostics dumps go.</summary>
+        public static string DataDir => Path.Combine(MelonEnvironment.UserDataDirectory, "DnWVR");
     }
 }
