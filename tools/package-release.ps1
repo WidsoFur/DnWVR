@@ -19,10 +19,11 @@ param(
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $project = Join-Path $root "DnWVR\DnWVR.csproj"
+$props = Join-Path $root "Directory.Build.props"
 
-[xml]$csproj = Get-Content -LiteralPath $project
-$version = $csproj.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ } | Select-Object -First 1
-if (-not $version) { throw "No <Version> in $project" }
+[xml]$build = Get-Content -LiteralPath $props
+$version = $build.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ } | Select-Object -First 1
+if (-not $version) { throw "No <Version> in $props" }
 
 if (-not $NoBuild) {
     dotnet build $project -c Release -p:SkipDeploy=true --nologo

@@ -1,0 +1,28 @@
+<Project>
+
+  <!--
+    Puts a freshly built mod into the game. A loader's project says where its own DLL goes ($(DeployDir)) and what has to
+    exist for that to make sense ($(DeployGate)), so building for a loader you have not installed is quietly skipped
+    rather than scattering files into a folder the loader would never read.
+  -->
+
+  <!-- Unity's OpenXR provider, laid out like the game's data folder (see openxr\README.md) -->
+  <ItemGroup>
+    <XRProviderManaged Include="$(XRProviderDir)\Managed\*.dll" />
+    <XRProviderNative Include="$(XRProviderDir)\Plugins\x86_64\*.dll" />
+    <XRProviderSubsystem Include="$(XRProviderDir)\UnitySubsystems\UnityOpenXR\*.json" />
+  </ItemGroup>
+
+  <Target Name="DeployToGame" AfterTargets="Build"
+          Condition="'$(SkipDeploy)' != 'true' And '$(DeployDir)' != '' And ('$(DeployGate)' == '' Or Exists('$(DeployGate)'))">
+    <MakeDir Directories="$(DeployDir);$(GameDataDir)\Plugins\x86_64;$(GameDataDir)\UnitySubsystems\UnityOpenXR" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DeployDir)" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(DeployDir)" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    <!-- Both loaders' projects lay the same provider down, and a parallel build has them writing at the same moment -->
+    <Copy SourceFiles="@(XRProviderManaged)" DestinationFolder="$(ManagedDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200" />
+    <Copy SourceFiles="@(XRProviderNative)" DestinationFolder="$(GameDataDir)\Plugins\x86_64" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200" />
+    <Copy SourceFiles="@(XRProviderSubsystem)" DestinationFolder="$(GameDataDir)\UnitySubsystems\UnityOpenXR" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="200" />
+    <Message Importance="high" Text="$(AssemblyName) deployed to $(DeployDir)" />
+  </Target>
+
+</Project>
