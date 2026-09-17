@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using TMPro;
 using UnityEngine;
@@ -17,6 +18,9 @@ namespace DnWVR.VR
         /// <summary>Range the height row allows, in centimetres.</summary>
         public const int MinHeightCm = 120, MaxHeightCm = 220;
 
+        /// <summary>How much bigger the options screen's text is in VR than the flat game's, and its colour.</summary>
+        public static float FontScale = 1.35f;
+
         const float MinSnap = 5f, MaxSnap = 90f, SnapStep = 5f;
         const float MinTurnSpeed = 30f, MaxTurnSpeed = 360f, TurnSpeedStep = 10f;
 
@@ -30,10 +34,14 @@ namespace DnWVR.VR
         static AccessTools.FieldRef<ScriptableSettingSpawner, GameObject> s_groupTitle, s_textInput;
         static AccessTools.FieldRef<ScriptableSettingSpawner, bool> s_ready;
 
+        // Original sizes by instance id, so scaling up is not applied twice to the same label.
+        static readonly Dictionary<int, float> s_sizes = new Dictionary<int, float>();
+
         ScriptableSettingSpawner _spawner;
         TMP_InputField _height, _turnMode, _turnAmount;
         TextMeshProUGUI _turnAmountLabel;
         int _sweep;
+        int _rows = -1;
 
         public static void Ensure()
         {
@@ -66,6 +74,11 @@ namespace DnWVR.VR
             var content = _spawner.transform;
             if (!content.gameObject.activeInHierarchy || !s_ready(_spawner)) return;
             Flatten(content);
+            if (_sweep++ % 15 == 0 || content.childCount != _rows)
+            {
+                _rows = content.childCount;
+                Restyle(content);
+            }
 
             var title = content.Find(TitleName);
             if (title == null)
@@ -103,10 +116,35 @@ namespace DnWVR.VR
             }
         }
 
+        /// <summary>
+        /// Makes the screen readable through a headset: the game's text is sized for a monitor an arm's length away, and
+        /// on a panel standing in the room it is small and its lighter greys disappear into the panel. Sizes are scaled
+        /// from the ones the game authored, kept by instance id so a label is never scaled twice, and the colour is set
+        /// outright because several of the game's own labels are grey on a light panel.
+        /// </summary>
+        static void Restyle(Transform content)
+        {
+            foreach (var text in content.GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                int id = text.GetInstanceID();
+                if (!s_sizes.TryGetValue(id, out float authored))
+                {
+                    authored = text.enableAutoSizing ? text.fontSizeMax : text.fontSize;
+                    s_sizes[id] = authored;
+                }
+                text.enableAutoSizing = false;
+                text.fontSize = authored * FontScale;
+                text.color = Color.black;
+            }
+        }
+
         void Build(Transform content)
         {
             try
             {
+                // The rows are new objects, so the sizes remembered for the old ones are of no use to anyone.
+                s_sizes.Clear();
+                _rows = -1;
                 var titlePrefab = s_groupTitle(_spawner);
                 if (titlePrefab == null || s_textInput(_spawner) == null) return;
 
@@ -154,11 +192,9 @@ namespace DnWVR.VR
         void BuildTurnRow(GameObject row)
         {
             _turnMode = Number(row, 0, null);
-            if (_turnMode != null)
-            {
-                _turnMode.readOnly = true;
-                _turnMode.interactable = false;
-            }
+            // Read-only rather than disabled: a disabled field is painted in the greyed-out colour, which on this panel
+            // is barely there at all.
+            if (_turnMode != null) _turnMode.readOnly = true;
             Stepper(row, () => SetSmoothTurn(!VRInput.SmoothTurn), () => SetSmoothTurn(!VRInput.SmoothTurn));
         }
 
