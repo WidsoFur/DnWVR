@@ -36,11 +36,15 @@ with two in the folder the mod loads twice and patches the game twice.
 <details open>
 <summary><b>BepInEx</b> - recommended</summary>
 
-1. Download [BepInEx 5.4.23.5](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5), the `BepInEx_win_x64` zip,
-   and extract it into the game folder - the one with `DragNWash.exe`.
+1. Download [`BepInEx_win_x64_5.4.23.5.zip`](https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x64_5.4.23.5.zip),
+   the **x64** one: the game is 64-bit, and the x86 build does nothing at all, without a word. Extract it into the game
+   folder so that `winhttp.dll` ends up right next to `DragNWash.exe`, not in a folder of its own.
 2. Extract [`DnWVR-0.1.1-BepInEx.zip`](../../releases/download/v0.1.1/DnWVR-0.1.1-BepInEx.zip) into the same folder,
    merging the folders it brings: `BepInEx\plugins\DnWVR` plus Unity's OpenXR files in `DragNWash_Data`.
 3. Start your VR runtime, then launch the game from Steam. VR starts on its own.
+
+If the game starts flat, look in `BepInEx`: after the first launch it holds `LogOutput.log` and `config`. If they are
+not there, BepInEx never ran - check that `winhttp.dll` sits next to `DragNWash.exe` and is 26 KB, not 22 KB.
 
 Settings live in `BepInEx\config\com.widsofur.dnwvr.cfg`, each with a line saying what it does. To uninstall, delete
 `BepInEx\plugins\DnWVR`.
