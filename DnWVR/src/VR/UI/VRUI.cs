@@ -40,6 +40,21 @@ namespace DnWVR.VR
         static readonly List<RectTransform> s_hudCanvases = new List<RectTransform>();
         public static IEnumerable<Canvas> Converted => s_converted;
 
+        /// <summary>
+        /// Re-scales the menu panels already standing in the room, for when the menu size changes while the game runs.
+        /// A panel keeps the pixel size it was converted with, so a new world width is only a new scale.
+        /// </summary>
+        public static void ApplyMenuSize()
+        {
+            foreach (var c in s_converted)
+            {
+                if (c == null || !IsMenuCanvas(c)) continue;
+                var rt = (RectTransform)c.transform;
+                if (rt.sizeDelta.x <= 0f) continue;
+                rt.localScale = Vector3.one * (MenuHands.MenuWidth(MenuWidthMeters) / rt.sizeDelta.x);
+            }
+        }
+
         static HudFollower s_hudFollower;
         static AccessTools.FieldRef<UiPrompt, RectTransform> s_promptRect;
 

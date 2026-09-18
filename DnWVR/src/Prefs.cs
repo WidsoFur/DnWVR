@@ -28,6 +28,7 @@ namespace DnWVR
         public static Pref<bool> DialogueCameraZoom, DialogueAutoAdvance,
             DialogueTriggerSkip, UIOnTop;
         public static Pref<float> OptionsFontScale;
+        public static Pref<int> MenuWidthCm;
         public static Pref<float> SpongeReach;
         public static Pref<float> DialogueLineSeconds, SexSceneBuildUpSeconds,
             SexSceneFinishHoldSeconds, SexSceneWalkSpeed;
@@ -185,9 +186,12 @@ namespace DnWVR
                 "A grip or trigger press skips dialogue lines outside interactive sex scenes: a line shows in full, then the " +
                 "next one comes (either grip skips; the hand holding a tool and the pointer's hand keep their trigger; answers " +
                 "need the laser)");
-            OptionsFontScale = PrefStore.Create("OptionsFontScale", 1.35f,
-                "How much bigger the options screen's text is than the flat game's. The game sizes it for a monitor an " +
-                "arm's length away, which reads small on a panel standing in the room");
+            MenuWidthCm = PrefStore.Create("MenuWidthCm", 170,
+                "How wide (cm) the menu panels stand in front of you. This is the setting that makes a menu easier to " +
+                "read: everything on the panel grows together, text and boxes alike");
+            OptionsFontScale = PrefStore.Create("OptionsFontScale", 1f,
+                "A nudge on the options screen's text size only, for when the panel is the size you want but the text " +
+                "is not. The rows size their own text to fit, so a large nudge will crop it");
             UIOnTop = PrefStore.Create("UIOnTop", true,
                 "Menus, HUD and dialogue draw over the world instead of hiding behind the dragon or walls (applies to panels " +
                 "created after a scene load)");

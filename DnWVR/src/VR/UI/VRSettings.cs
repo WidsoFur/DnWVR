@@ -21,8 +21,11 @@ namespace DnWVR.VR
         /// <summary>Range the camera lift row allows, in centimetres.</summary>
         public const int MinLiftCm = -50, MaxLiftCm = 100;
 
-        /// <summary>How much bigger the options screen's text is in VR than the flat game's, and its colour.</summary>
-        public static float FontScale = 1.35f;
+        /// <summary>A nudge on the options screen's text size; the panel's own size is the bigger lever.</summary>
+        public static float FontScale = 1f;
+
+        /// <summary>Range the menu size row allows, in centimetres of panel width.</summary>
+        public const int MinMenuCm = 80, MaxMenuCm = 400;
 
         const float MinSnap = 5f, MaxSnap = 90f, SnapStep = 5f;
         const float MinTurnSpeed = 30f, MaxTurnSpeed = 360f, TurnSpeedStep = 10f;
@@ -32,20 +35,22 @@ namespace DnWVR.VR
         const string TurnRowName = "DnWVR_TurnRow";
         const string TurnAmountRowName = "DnWVR_TurnAmountRow";
         const string LiftRowName = "DnWVR_LiftRow";
+        const string MenuRowName = "DnWVR_MenuRow";
 
         // The section's own rows, in the order they belong in, which is also how it checks it is still at the bottom.
-        static readonly string[] s_ours = { TitleName, HeightRowName, LiftRowName, TurnRowName, TurnAmountRowName };
+        static readonly string[] s_ours =
+            { TitleName, HeightRowName, LiftRowName, TurnRowName, TurnAmountRowName, MenuRowName };
 
         public static VRSettings Instance { get; private set; }
 
         static AccessTools.FieldRef<ScriptableSettingSpawner, GameObject> s_groupTitle, s_textInput;
         static AccessTools.FieldRef<ScriptableSettingSpawner, bool> s_ready;
 
-        // Original sizes by instance id, so scaling up is not applied twice to the same label.
-        static readonly Dictionary<int, float> s_sizes = new Dictionary<int, float>();
+        // Authored size and auto-size bounds by instance id, so a label is never scaled from its own scaled value.
+        static readonly Dictionary<int, Vector3> s_sizes = new Dictionary<int, Vector3>();
 
         ScriptableSettingSpawner _spawner;
-        TMP_InputField _height, _lift, _turnMode, _turnAmount;
+        TMP_InputField _height, _lift, _turnMode, _turnAmount, _menu;
         TextMeshProUGUI _turnAmountLabel;
         int _sweep;
         int _rows = -1;
@@ -123,23 +128,27 @@ namespace DnWVR.VR
         }
 
         /// <summary>
-        /// Makes the screen readable through a headset: the game's text is sized for a monitor an arm's length away, and
-        /// on a panel standing in the room it is small and its lighter greys disappear into the panel. Sizes are scaled
-        /// from the ones the game authored, kept by instance id so a label is never scaled twice, and the colour is set
-        /// outright because several of the game's own labels are grey on a light panel.
+        /// Two things the game's own styling does not survive on a panel standing in the room: its lighter greys vanish
+        /// into the panel, so the text is set black outright, and the size is nudged by FontScale. Auto-sizing is left
+        /// exactly as the game set it - a row sizes its own text to fit its box, and overriding that made the text too
+        /// big for the box it sits in. To read the screen from further away, make the panel bigger instead.
         /// </summary>
         static void Restyle(Transform content)
         {
             foreach (var text in content.GetComponentsInChildren<TextMeshProUGUI>(true))
             {
                 int id = text.GetInstanceID();
-                if (!s_sizes.TryGetValue(id, out float authored))
+                if (!s_sizes.TryGetValue(id, out var authored))
                 {
-                    authored = text.enableAutoSizing ? text.fontSizeMax : text.fontSize;
+                    authored = new Vector3(text.fontSize, text.fontSizeMin, text.fontSizeMax);
                     s_sizes[id] = authored;
                 }
-                text.enableAutoSizing = false;
-                text.fontSize = authored * FontScale;
+                text.fontSize = authored.x * FontScale;
+                if (text.enableAutoSizing)
+                {
+                    text.fontSizeMin = authored.y * FontScale;
+                    text.fontSizeMax = authored.z * FontScale;
+                }
                 text.color = Color.black;
             }
         }
@@ -163,6 +172,7 @@ namespace DnWVR.VR
                 BuildLiftRow(NewRow(content, LiftRowName, "Camera lift (cm)"));
                 BuildTurnRow(NewRow(content, TurnRowName, "Turning"));
                 BuildTurnAmountRow(NewRow(content, TurnAmountRowName, string.Empty));
+                BuildMenuRow(NewRow(content, MenuRowName, "Menu size (cm)"));
                 Refresh();
                 Log.Msg("[VRSettings] VR section added to the options screen");
             }
@@ -218,6 +228,26 @@ namespace DnWVR.VR
             _turnAmountLabel = row.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
             _turnAmount = Number(row, 3, text => SetTurnAmount(float.TryParse(text, out float v) ? v : TurnAmount()));
             Stepper(row, () => SetTurnAmount(TurnAmount() - TurnStep()), () => SetTurnAmount(TurnAmount() + TurnStep()));
+        }
+
+        /// <summary>
+        /// How wide the menu panels stand in the room, which scales everything on them together - text, boxes and all -
+        /// and is the honest way to make a screen built for a monitor readable through a headset.
+        /// </summary>
+        void BuildMenuRow(GameObject row)
+        {
+            _menu = Number(row, 3, text => SetMenuSize(int.TryParse(text, out int cm) ? cm : MenuCm));
+            Stepper(row, () => SetMenuSize(MenuCm - 5), () => SetMenuSize(MenuCm + 5));
+        }
+
+        static int MenuCm => Mathf.RoundToInt(VRUI.MenuWidthMeters * 100f);
+
+        void SetMenuSize(int cm)
+        {
+            VRUI.MenuWidthMeters = Mathf.Clamp(cm, MinMenuCm, MaxMenuCm) * 0.01f;
+            VRUI.ApplyMenuSize();
+            Save(Prefs.MenuWidthCm, MenuCm);
+            Refresh();
         }
 
         /// <summary>Takes the height straight off the headset, which the floor-level tracking origin measures for us.</summary>
@@ -277,6 +307,7 @@ namespace DnWVR.VR
         {
             Show(_height, VRRig.HeightCm.ToString());
             Show(_lift, VRRig.CameraLiftCm.ToString());
+            Show(_menu, MenuCm.ToString());
             Show(_turnMode, VRInput.SmoothTurn ? "Smooth" : "Snap");
             Show(_turnAmount, Mathf.RoundToInt(TurnAmount()).ToString());
             if (_turnAmountLabel != null)

@@ -334,6 +334,8 @@ namespace DnWVR
             DialogueVR.SkipLines = Prefs.DialogueTriggerSkip.Value;
             VRUI.OnTop = Prefs.UIOnTop.Value;
             VRSettings.FontScale = Mathf.Clamp(Prefs.OptionsFontScale.Value, 0.5f, 3f);
+            VRUI.MenuWidthMeters = Mathf.Clamp(Prefs.MenuWidthCm.Value, VRSettings.MinMenuCm, VRSettings.MaxMenuCm) * 0.01f;
+            VRUI.ApplyMenuSize();
             DebugInteractionLog = Prefs.DebugInteractionLog.Value;
             VRHands.PlapperOffsetPos = ParseVector(Prefs.PlapperOffsetPos.Value);
             VRHands.PlapperOffsetEuler = ParseVector(Prefs.PlapperOffsetEuler.Value);
