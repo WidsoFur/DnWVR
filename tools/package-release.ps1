@@ -3,10 +3,9 @@
     Builds DnWVR and packs a release zip that extracts straight into the game folder.
 
 .DESCRIPTION
-    The zip holds a DLL for each mod loader - Mods\DnWVR.dll for MelonLoader and
-    BepInEx\plugins\DnWVR\DnWVR.BepInEx.dll for BepInEx - plus Unity's OpenXR provider (DragNWash_Data\Managed,
-    Plugins\x86_64 and UnitySubsystems), taken from openxr\ in this repository. A player installs one loader and the
-    other loader's DLL simply sits there unread.
+    One zip per mod loader, each extracting straight into the game folder: the loader's own DLL - Mods\DnWVR.dll for
+    MelonLoader, BepInEx\plugins\DnWVR\DnWVR.BepInEx.dll for BepInEx - plus Unity's OpenXR provider
+    (DragNWash_Data\Managed, Plugins\x86_64 and UnitySubsystems), taken from openxr\ in this repository.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File tools\package-release.ps1
@@ -41,36 +40,46 @@ if (-not $ProviderDir) { $ProviderDir = Join-Path $root "openxr" }
 if (-not (Test-Path -LiteralPath $ProviderDir)) { throw "OpenXR provider folder not found: $ProviderDir" }
 $ProviderDir = (Resolve-Path -LiteralPath $ProviderDir).Path
 
+# The OpenXR provider goes into both zips; a player needs it whichever loader they run.
 # Archive path (always with forward slashes, as the zip format requires) -> source file
-$files = [ordered]@{
-    "Mods/DnWVR.dll" = $dll
-    "BepInEx/plugins/DnWVR/DnWVR.BepInEx.dll" = $bepinex
-}
+$provider = [ordered]@{}
 foreach ($f in "Unity.XR.OpenXR.dll", "Unity.XR.Management.dll", "Unity.XR.CoreUtils.dll", "UnityEngine.SpatialTracking.dll", "UnityEngine.XR.LegacyInputHelpers.dll") {
-    $files["DragNWash_Data/Managed/$f"] = Join-Path $ProviderDir "Managed\$f"
+    $provider["DragNWash_Data/Managed/$f"] = Join-Path $ProviderDir "Managed\$f"
 }
 foreach ($f in "UnityOpenXR.dll", "openxr_loader.dll") {
-    $files["DragNWash_Data/Plugins/x86_64/$f"] = Join-Path $ProviderDir "Plugins\x86_64\$f"
+    $provider["DragNWash_Data/Plugins/x86_64/$f"] = Join-Path $ProviderDir "Plugins\x86_64\$f"
 }
-$files["DragNWash_Data/UnitySubsystems/UnityOpenXR/UnitySubsystemsManifest.json"] = Join-Path $ProviderDir "UnitySubsystems\UnityOpenXR\UnitySubsystemsManifest.json"
+$provider["DragNWash_Data/UnitySubsystems/UnityOpenXR/UnitySubsystemsManifest.json"] = Join-Path $ProviderDir "UnitySubsystems\UnityOpenXR\UnitySubsystemsManifest.json"
 
-foreach ($source in $files.Values) {
-    if (-not (Test-Path -LiteralPath $source)) { throw "Missing file: $source" }
+$packages = [ordered]@{
+    "MelonLoader" = @{ "Mods/DnWVR.dll" = $dll }
+    "BepInEx" = @{ "BepInEx/plugins/DnWVR/DnWVR.BepInEx.dll" = $bepinex }
 }
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-$zip = Join-Path (Resolve-Path -LiteralPath $OutDir).Path "DnWVR-$version.zip"
-if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
-
+$OutDir = (Resolve-Path -LiteralPath $OutDir).Path
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
-$archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
-try {
-    foreach ($entry in $files.Keys) {
-        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $files[$entry], $entry, [IO.Compression.CompressionLevel]::Optimal)
+
+foreach ($loader in $packages.Keys) {
+    $files = [ordered]@{}
+    foreach ($entry in $packages[$loader].Keys) { $files[$entry] = $packages[$loader][$entry] }
+    foreach ($entry in $provider.Keys) { $files[$entry] = $provider[$entry] }
+    foreach ($source in $files.Values) {
+        if (-not (Test-Path -LiteralPath $source)) { throw "Missing file: $source" }
     }
-}
-finally {
-    $archive.Dispose()
+
+    $zip = Join-Path $OutDir "DnWVR-$version-$loader.zip"
+    if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+    $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach ($entry in $files.Keys) {
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $files[$entry], $entry, [IO.Compression.CompressionLevel]::Optimal)
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+    Write-Host "Release package: $zip ($($files.Count) files)"
 }
 
-Write-Host "Release package: $zip (provider from $ProviderDir)"
+Write-Host "OpenXR provider taken from $ProviderDir"
