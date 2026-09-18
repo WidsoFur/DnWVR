@@ -3,8 +3,10 @@
     Builds DnWVR and packs a release zip that extracts straight into the game folder.
 
 .DESCRIPTION
-    The zip holds Mods\DnWVR.dll and Unity's OpenXR provider (DragNWash_Data\Managed, Plugins\x86_64 and
-    UnitySubsystems), taken from openxr\ in this repository.
+    The zip holds a DLL for each mod loader - Mods\DnWVR.dll for MelonLoader and
+    BepInEx\plugins\DnWVR\DnWVR.BepInEx.dll for BepInEx - plus Unity's OpenXR provider (DragNWash_Data\Managed,
+    Plugins\x86_64 and UnitySubsystems), taken from openxr\ in this repository. A player installs one loader and the
+    other loader's DLL simply sits there unread.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File tools\package-release.ps1
@@ -26,19 +28,24 @@ $version = $build.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-
 if (-not $version) { throw "No <Version> in $props" }
 
 if (-not $NoBuild) {
-    dotnet build $project -c Release -p:SkipDeploy=true --nologo
+    dotnet build $root -c Release -p:SkipDeploy=true --nologo
     if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 }
 
 $dll = Join-Path $root "DnWVR\bin\Release\DnWVR.dll"
 if (-not (Test-Path -LiteralPath $dll)) { throw "Mod not built: $dll" }
+$bepinex = Join-Path $root "DnWVR.BepInEx\bin\Release\DnWVR.BepInEx.dll"
+if (-not (Test-Path -LiteralPath $bepinex)) { throw "BepInEx build missing: $bepinex" }
 
 if (-not $ProviderDir) { $ProviderDir = Join-Path $root "openxr" }
 if (-not (Test-Path -LiteralPath $ProviderDir)) { throw "OpenXR provider folder not found: $ProviderDir" }
 $ProviderDir = (Resolve-Path -LiteralPath $ProviderDir).Path
 
 # Archive path (always with forward slashes, as the zip format requires) -> source file
-$files = [ordered]@{ "Mods/DnWVR.dll" = $dll }
+$files = [ordered]@{
+    "Mods/DnWVR.dll" = $dll
+    "BepInEx/plugins/DnWVR/DnWVR.BepInEx.dll" = $bepinex
+}
 foreach ($f in "Unity.XR.OpenXR.dll", "Unity.XR.Management.dll", "Unity.XR.CoreUtils.dll", "UnityEngine.SpatialTracking.dll", "UnityEngine.XR.LegacyInputHelpers.dll") {
     $files["DragNWash_Data/Managed/$f"] = Join-Path $ProviderDir "Managed\$f"
 }

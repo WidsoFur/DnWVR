@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <!-- The mod's version, shared by every loader's build and read by tools\package-release.ps1 -->
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Drag'n Wash</GameDir>
     <GameDataDir>$(GameDir)\DragNWash_Data</GameDataDir>
     <ManagedDir>$(GameDataDir)\Managed</ManagedDir>
