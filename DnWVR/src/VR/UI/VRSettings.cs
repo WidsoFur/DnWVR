@@ -128,8 +128,8 @@ namespace DnWVR.VR
         }
 
         /// <summary>
-        /// Two things the game's own styling does not survive on a panel standing in the room: its lighter greys vanish
-        /// into the panel, so the text is set black outright, and the size is nudged by FontScale. Auto-sizing is left
+        /// Two things the game's own styling does not survive on a panel standing in the room: its greys vanish into the
+        /// panel, so every label is repainted for the thing it sits on, and the size is nudged by FontScale. Auto-sizing is left
         /// exactly as the game set it - a row sizes its own text to fit its box, and overriding that made the text too
         /// big for the box it sits in. To read the screen from further away, make the panel bigger instead.
         /// </summary>
@@ -149,9 +149,19 @@ namespace DnWVR.VR
                     text.fontSizeMin = authored.y * FontScale;
                     text.fontSizeMax = authored.z * FontScale;
                 }
-                text.color = Color.black;
+                // Black on the controls, which the game draws light, and white on the panel, which it draws dark.
+                text.color = OnControl(text.transform) ? Color.black : Color.white;
             }
         }
+
+        /// <summary>
+        /// Whether a label sits on a control of its own - a button, a field, a dropdown, all of which the game paints
+        /// light - rather than straight on the panel.
+        /// </summary>
+        static bool OnControl(Transform text) =>
+            text.GetComponentInParent<Button>(true) != null
+            || text.GetComponentInParent<TMP_InputField>(true) != null
+            || text.GetComponentInParent<TMP_Dropdown>(true) != null;
 
         void Build(Transform content)
         {

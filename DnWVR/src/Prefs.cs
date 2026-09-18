@@ -186,7 +186,7 @@ namespace DnWVR
                 "A grip or trigger press skips dialogue lines outside interactive sex scenes: a line shows in full, then the " +
                 "next one comes (either grip skips; the hand holding a tool and the pointer's hand keep their trigger; answers " +
                 "need the laser)");
-            MenuWidthCm = PrefStore.Create("MenuWidthCm", 170,
+            MenuWidthCm = PrefStore.Create("MenuWidthCm", 230,
                 "How wide (cm) the menu panels stand in front of you. This is the setting that makes a menu easier to " +
                 "read: everything on the panel grows together, text and boxes alike");
             OptionsFontScale = PrefStore.Create("OptionsFontScale", 1f,
