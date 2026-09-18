@@ -54,10 +54,11 @@ Settings live in `BepInEx\config\com.widsofur.dnwvr.cfg`, each with a line sayin
 <details>
 <summary><b>MelonLoader</b></summary>
 
-1. Install MelonLoader 0.7.3 into the game folder - the one with `DragNWash.exe` - either way works:
-   * [`MelonLoader.Installer.exe`](https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.Installer.exe):
+1. Install MelonLoader 0.7.3 into the game folder - the one with `DragNWash.exe` - in **one** of these two ways, not
+   both: they put the same MelonLoader in the same place, so the second only gets in the way of the first.
+   * **either** [`MelonLoader.Installer.exe`](https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.Installer.exe):
      run it, pick `DragNWash.exe` and version 0.7.3;
-   * [`MelonLoader.x64.zip`](https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip):
+   * **or** [`MelonLoader.x64.zip`](https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip):
      unpack it into the game folder so that `version.dll` ends up right next to `DragNWash.exe`.
 2. Extract [`DnWVR-0.1.1-MelonLoader.zip`](../../releases/download/v0.1.1/DnWVR-0.1.1-MelonLoader.zip) into the same
    folder, merging the folders it brings: `Mods\DnWVR.dll` plus Unity's OpenXR files in `DragNWash_Data`.
