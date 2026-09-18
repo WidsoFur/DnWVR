@@ -32,18 +32,38 @@ and dialogue become panels in front of you. Nothing about the game itself is rep
 
 ## Install
 
-1. Install one mod loader into the game folder (the one with `DragNWash.exe`) - **not both**, or the game loads the
-   mod twice and patches itself twice:
-   - [MelonLoader 0.7.3](https://github.com/LavaGang/MelonLoader/releases/tag/v0.7.3), with the installer or by
-     unpacking `MelonLoader.x64.zip` there, or
-   - [BepInEx 5.4.23.5](https://github.com/BepInEx/BepInEx/releases) (`BepInEx_win_x64`), unpacked there and run once
-     so it builds its folders.
-2. Download `DnWVR-<version>.zip` from [Releases](../../releases/latest) and extract it into the same folder, merging
-   the folders it brings: the DLL for your loader plus Unity's OpenXR files in `DragNWash_Data`.
+The mod comes as one download per mod loader. Install **one** loader, never both: each hooks the game on its own, so
+with two in the folder the mod loads twice and patches the game twice.
+
+<details open>
+<summary><b>BepInEx</b> - recommended</summary>
+
+1. Download [BepInEx 5.4.23.5](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5), the `BepInEx_win_x64` zip,
+   and extract it into the game folder - the one with `DragNWash.exe`.
+2. Extract [`DnWVR-0.1.1-BepInEx.zip`](../../releases/download/v0.1.1/DnWVR-0.1.1-BepInEx.zip) into the same folder,
+   merging the folders it brings: `BepInEx\plugins\DnWVR` plus Unity's OpenXR files in `DragNWash_Data`.
 3. Start your VR runtime, then launch the game from Steam. VR starts on its own.
 
-Settings live in `UserData\MelonPreferences.cfg` under MelonLoader and in `BepInEx\config\com.widsofur.dnwvr.cfg`
-under BepInEx. To uninstall, delete `Mods\DnWVR.dll` or `BepInEx\plugins\DnWVR`.
+Settings live in `BepInEx\config\com.widsofur.dnwvr.cfg`, each with a line saying what it does. To uninstall, delete
+`BepInEx\plugins\DnWVR`.
+
+</details>
+
+<details>
+<summary><b>MelonLoader</b></summary>
+
+1. Install [MelonLoader 0.7.3](https://github.com/LavaGang/MelonLoader/releases/tag/v0.7.3) into the game folder - the
+   one with `DragNWash.exe` - either with the installer or by unpacking `MelonLoader.x64.zip` there.
+2. Extract [`DnWVR-0.1.1-MelonLoader.zip`](../../releases/download/v0.1.1/DnWVR-0.1.1-MelonLoader.zip) into the same
+   folder, merging the folders it brings: `Mods\DnWVR.dll` plus Unity's OpenXR files in `DragNWash_Data`.
+3. Start your VR runtime, then launch the game from Steam. VR starts on its own.
+
+Settings live in `UserData\MelonPreferences.cfg`, each with a line saying what it does. To uninstall, delete
+`Mods\DnWVR.dll`.
+
+</details>
+
+Both downloads are on the [releases page](../../releases/latest), and `F6` re-reads the settings file while you play.
 
 ## Controls
 
