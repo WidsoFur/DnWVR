@@ -8,8 +8,9 @@
     <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Drag'n Wash</GameDir>
     <GameDataDir>$(GameDir)\DragNWash_Data</GameDataDir>
     <ManagedDir>$(GameDataDir)\Managed</ManagedDir>
-    <MelonDir>$(GameDir)\MelonLoader\net35</MelonDir>
-    <!-- BepInEx is not on NuGet, so it is compiled against out of refs\ unless the game has it installed -->
+    <!-- Each loader is compiled against the copy the game has, else the one in refs\, so either build works alone -->
+    <MelonDir Condition="'$(MelonDir)' == '' And Exists('$(GameDir)\MelonLoader\net35\MelonLoader.dll')">$(GameDir)\MelonLoader\net35</MelonDir>
+    <MelonDir Condition="'$(MelonDir)' == ''">$(MSBuildThisFileDirectory)refs\melonloader</MelonDir>
     <BepInExDir Condition="'$(BepInExDir)' == '' And Exists('$(GameDir)\BepInEx\core\BepInEx.dll')">$(GameDir)\BepInEx\core</BepInExDir>
     <BepInExDir Condition="'$(BepInExDir)' == ''">$(MSBuildThisFileDirectory)refs\bepinex5</BepInExDir>
     <!-- Unity XR assemblies: the provider in this repository (openxr\), else the copies a release installed into the game -->

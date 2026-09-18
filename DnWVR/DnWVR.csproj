@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <Target Name="CheckMelonLoader" BeforeTargets="ResolveAssemblyReferences">
-    <Error Condition="!Exists('$(MelonDir)\MelonLoader.dll')" Text="MelonLoader 0.7.3 is not installed in '$(GameDir)'." />
+    <Error Condition="!Exists('$(MelonDir)\MelonLoader.dll')" Text="MelonLoader assemblies not found in '$(MelonDir)'. They ship in refs\ - see refs\README.md." />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)..\build\Deploy.targets" />
