@@ -54,8 +54,9 @@ Settings live in `BepInEx\config\com.widsofur.dnwvr.cfg`, each with a line sayin
 <details>
 <summary><b>MelonLoader</b></summary>
 
-1. Install [MelonLoader 0.7.3](https://github.com/LavaGang/MelonLoader/releases/tag/v0.7.3) into the game folder - the
-   one with `DragNWash.exe` - either with the installer or by unpacking `MelonLoader.x64.zip` there.
+1. Install MelonLoader 0.7.3 into the game folder - the one with `DragNWash.exe` - either with the
+   [installer](https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.Installer.exe) or by unpacking [`MelonLoader.x64.zip`](https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip) there, so
+   that `version.dll` ends up right next to `DragNWash.exe`.
 2. Extract [`DnWVR-0.1.1-MelonLoader.zip`](../../releases/download/v0.1.1/DnWVR-0.1.1-MelonLoader.zip) into the same
    folder, merging the folders it brings: `Mods\DnWVR.dll` plus Unity's OpenXR files in `DragNWash_Data`.
 3. Start your VR runtime, then launch the game from Steam. VR starts on its own.
