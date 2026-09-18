@@ -252,13 +252,18 @@ namespace DnWVR.VR
             var axis = viaFingers ? DeeperEnd(palm, fingers, n) : palm;
             c.Normal = n;
             c.Point = axis - n * (r - depth);
-            if (SurfaceAlong(col, axis, n, out var face))
+            if (SurfaceAlong(col, axis, n, r + EnterPad, out var face))
             {
-                if (viaFingers && Vector3.Dot(face.normal, n) < 0f)
+                if (Vector3.Dot(face.normal, n) < 0f)
                 {
-                    // That is the far side's normal: the other end of the capsule may be the one that touches.
-                    var end = DeeperEnd(palm, fingers, face.normal);
-                    if (end != axis && SurfaceAlong(col, end, face.normal, out var face2)) face = face2;
+                    // A face turned away from the penetration normal is not the one under the paw. A dragon's whole body is
+                    // a single mesh collider, so the ray can meet the arm above a palm in the armpit or the far side of a
+                    // crease, and taking that normal reverses every slap decision made from it. The other end of the
+                    // capsule may be the end that touches; failing that the penetration normal is the honest answer.
+                    var end = viaFingers ? DeeperEnd(palm, fingers, face.normal) : axis;
+                    if (end == axis || !SurfaceAlong(col, end, face.normal, r + EnterPad, out face)
+                        || Vector3.Dot(face.normal, n) < 0f)
+                        return true;
                 }
                 c.Point = face.point;
                 c.Normal = face.normal;
@@ -268,13 +273,13 @@ namespace DnWVR.VR
 
         static Vector3 DeeperEnd(Vector3 a, Vector3 b, Vector3 normal) => Vector3.Dot(a, normal) <= Vector3.Dot(b, normal) ? a : b;
 
-        // The face of col nearest to p on the line through p along n. Casts both ways because mesh queries only meet front
-        // faces, so the result holds whichever way n points.
-        static bool SurfaceAlong(Collider col, Vector3 p, Vector3 n, out RaycastHit hit)
+        // The face of col nearest to p on the line through p along n, looking no further than reach either way - the face
+        // under the paw is within its own radius, and anything past that belongs to another part of the same collider.
+        // Casts both ways because mesh queries only meet front faces, so the result holds whichever way n points.
+        static bool SurfaceAlong(Collider col, Vector3 p, Vector3 n, float reach, out RaycastHit hit)
         {
-            const float reach = 0.5f;
-            bool down = col.Raycast(new Ray(p + n * reach, -n), out var hd, reach + 0.1f);
-            bool up = col.Raycast(new Ray(p - n * reach, n), out var hu, reach + 0.1f);
+            bool down = col.Raycast(new Ray(p + n * reach, -n), out var hd, reach * 2f);
+            bool up = col.Raycast(new Ray(p - n * reach, n), out var hu, reach * 2f);
             if (down && up) hit = (hd.point - p).sqrMagnitude <= (hu.point - p).sqrMagnitude ? hd : hu;
             else hit = down ? hd : hu;
             return down || up;

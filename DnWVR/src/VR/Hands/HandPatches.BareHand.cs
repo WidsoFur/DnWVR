@@ -249,7 +249,9 @@ namespace DnWVR.VR
                     if (!st.ThroughLogged) { st.ThroughLogged = true; LogT($"[Touch] {side} no slap: came back through {c.Collider.name}"); }
                     return;
                 }
-                if (peak > PlapSpeed)
+                // A normal of zero length passes the outward test below by scoring exactly zero, which turns any touch
+                // into a slap; without a direction there is nothing to judge, so the slap waits for a real contact.
+                if (peak > PlapSpeed && c.Normal.sqrMagnitude > 0.5f)
                 {
                     // A paw moving away from the surface (a follow-through coming back out, a brush lifting off) never slaps.
                     if (Vector3.Dot(vel, c.Normal) > 0f)
@@ -359,7 +361,10 @@ namespace DnWVR.VR
                     bool cast = s == 0
                         ? dist > 1e-3f && Physics.SphereCast(st.LastProbe, VRHands.PalmRadius, motion / dist, out hit, dist, SurfaceMask, QueryTriggerInteraction.Ignore)
                         : fingerDist > 1e-3f && Physics.CapsuleCast(st.LastProbe, st.LastFingers, VRHands.FingerRadius, fingerMotion / fingerDist, out hit, fingerDist, SurfaceMask, QueryTriggerInteraction.Ignore);
-                    if (!cast || !Usable(hit.collider, ignoreRoot)) continue;
+                    // A sweep that starts already overlapping reports distance 0 and no point at all; taking it would
+                    // slap at the world origin, so the collider is left to the overlap pass below, which derives a real
+                    // point and normal from the geometry. SurfaceHand and PlayerBody reject the same result.
+                    if (!cast || (hit.distance <= 0f && hit.point == Vector3.zero) || !Usable(hit.collider, ignoreRoot)) continue;
                     var kind = Classify(hit.collider, probe, fingers, ref near);
                     if (kind > bestKind) { best = hit.collider; bestKind = kind; swept = true; sweptHit = hit; }
                 }
