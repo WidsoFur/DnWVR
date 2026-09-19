@@ -20,7 +20,8 @@ namespace DnWVR.VR
     {
         public enum Level { Quality, Balanced, Fast, Fastest }
 
-        public static Level Current = Level.Quality;
+        /// <summary>Balanced unless the cfg says otherwise: the game's own SSAO shimmers in a headset, and Quality keeps it.</summary>
+        public static Level Current = Level.Balanced;
 
         static readonly string[] s_names = { "Quality", "Balanced", "Fast", "Fastest" };
         // Per level: the eyes' resolution scale (URP takes anything within 0.05 of 1 as 1) and their MSAA (0 = the game's).
@@ -48,13 +49,13 @@ namespace DnWVR.VR
         static bool s_xrMsaaLooked;
         static int s_logged = -1;
 
-        /// <summary>The level named in the cfg; anything unknown is Quality, the game's own.</summary>
+        /// <summary>The level named in the cfg; anything unknown is Balanced, the default.</summary>
         public static Level Parse(string text)
         {
             for (int i = 0; i < s_names.Length; i++)
                 if (string.Equals(text?.Trim(), s_names[i], StringComparison.OrdinalIgnoreCase)) return (Level)i;
-            Log.Warning($"[Performance] \"{text}\" is not one of {string.Join(", ", s_names)}; using Quality");
-            return Level.Quality;
+            Log.Warning($"[Performance] \"{text}\" is not one of {string.Join(", ", s_names)}; using Balanced");
+            return Level.Balanced;
         }
 
         /// <summary>

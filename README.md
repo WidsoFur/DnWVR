@@ -88,9 +88,10 @@ Keyboard: `F5` head tracking on/off, `F6` reload settings, `F8` recenter, `F11` 
 Every setting lives in the config file named in the install steps above, each with a line saying what it does - turn
 speed, hand offsets, body size, the pace of the sex scenes, the desktop view. Edit it while playing and press `F6`.
 
-If the game stutters in the headset, step the **Performance** row in the VR section of the game's options from Quality
-towards Fastest. Balanced turns off the ambient occlusion, lightens the shadows and the desktop window's view and
-renders the eyes at 90%, Fast at 80% with 2x MSAA, and Fastest at 70% with the window showing the left eye.
+The **Performance** row in the VR section of the game's options starts at Balanced: no ambient occlusion, lighter
+shadows and desktop window's view, and the eyes at 90%. If the game stutters in the headset, step it to Fast (80% with
+2x MSAA) or Fastest (70%, with the window showing the left eye). Quality is the game's own picture, whose ambient
+occlusion shimmers in a headset.
 The log has a `[Perf]` line every 5 s with the frame times and the GPU and compositor times the VR runtime reports;
 attach it when you report it. `VRRenderOptimizations` turns off the mod's own rendering savings, to compare against
 the game as it ships.

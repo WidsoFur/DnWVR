@@ -193,11 +193,11 @@ namespace DnWVR
                 "Rendering savings that cost nothing visible in the headset: no fluid passes while nothing is liquid, no " +
                 "bloom too faint to see, no copy of each eye that nothing reads, and FXAA instead of 4x MSAA on the desktop " +
                 "window. Off = the game's own, for comparing");
-            PerformancePreset = PrefStore.Create("PerformancePreset", "Quality",
-                "The VR tab's Performance row. Quality = the game's own picture. Balanced = no SSAO, shadows with two " +
-                "cascades to 35 m and medium soft edges, eyes at 90% resolution, and the desktop window at 720p without " +
-                "shadows. Fast = eyes at " +
-                "80% and 2x MSAA as well. Fastest = eyes at 70%, and the window shows the left eye instead of a view of its own");
+            PerformancePreset = PrefStore.Create("PerformancePreset", "Balanced",
+                "The VR tab's Performance row. Quality = the game's own picture, SSAO included, whose noise shimmers in a " +
+                "headset. Balanced (the default) = no SSAO, shadows with two cascades to 35 m and medium soft edges, eyes at " +
+                "90% resolution, and the desktop window at 720p without shadows. Fast = eyes at 80% and 2x MSAA as well. " +
+                "Fastest = eyes at 70%, and the window shows the left eye instead of a view of its own");
             LogPerformance = PrefStore.Create("LogPerformance", true,
                 "Every 5 s in VR, a [Perf] line in the log: frame times and the GPU and compositor times the runtime reports. " +
                 "Attach it when reporting slowness");
