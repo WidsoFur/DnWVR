@@ -9,6 +9,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <DeployDir>$(GameDir)\Mods</DeployDir>
+    <!-- Like the BepInEx build: into a game with no MelonLoader installed, a stray Mods folder is all it would leave -->
+    <DeployGate>$(GameDir)\MelonLoader
+et35\MelonLoader.dll</DeployGate>
   </PropertyGroup>
 
   <!-- The BepInEx half of src\Loader belongs to the other project -->

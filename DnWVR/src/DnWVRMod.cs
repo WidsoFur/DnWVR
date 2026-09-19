@@ -38,6 +38,7 @@ namespace DnWVR
             // again once they all have.
             Prefs.Save();
 
+            InstallCheck.Run();
             if (Prefs.EnableVR.Value)
                 Host.StartCoroutine(StartXRWhenReady());
         }
@@ -75,6 +76,10 @@ namespace DnWVR
                     yield return new WaitForSecondsRealtime(5f);
                 }
             }
+            // The game carries on flat from here, and a player who looks at the log should find out why and what to do.
+            Log.Warning($"OpenXR did not start after {attempts} attempts, so the game stays flat. Start the VR runtime " +
+                        "(SteamVR, Oculus, Virtual Desktop), make sure it is the active OpenXR runtime, then press F11. " +
+                        "Player.log in AppData\\LocalLow\\Gator Dragon Games\\DragNWash has OpenXR's own report.");
         }
 
         static bool StartXR()

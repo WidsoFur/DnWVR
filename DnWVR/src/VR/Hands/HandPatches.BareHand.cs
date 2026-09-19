@@ -14,6 +14,7 @@ namespace DnWVR.VR
         {
             public bool InContact, Armed = true, HasLast, Stroking;
             public float NoContact, ContactStart, LastPlap = -10f, LastStroke = -10f, LastStrokeLog = -10f;
+            public float EntryPeak; // how fast the paw was going as it reached the surface
             public bool StrokeLogged, Held, OutwardLogged, ThroughLogged;
             public Vector3 LastProbe, LastFingers, LastHitPoint;
             // The surface of the latest contact frame, for a paw that ends up under it (HoldUnderSurface).
@@ -216,6 +217,7 @@ namespace DnWVR.VR
                 {
                     st.InContact = true;
                     st.ContactStart = frame.Now;
+                    st.EntryPeak = VRHands.PeakSpeed(right);
                     st.LastHitPoint = probe; // no scrape burst from a stale point
                     st.OutwardLogged = false;
                     st.ThroughLogged = false;
@@ -240,7 +242,12 @@ namespace DnWVR.VR
             static void SlapOrPress(PlapperHand ph, in Frame frame, TouchState st, bool right, Animator anim, Contact c, bool surfaceOnly)
             {
                 string side = right ? "R" : "L";
-                float peak = VRHands.PeakSpeed(right);
+                // The swing that arrived is what slaps, so its speed is the one taken as the paw reached the surface, with
+                // a couple of frames' grace for the probe trailing the controller. The peak keeps rolling for the rest of
+                // the window, and without this a paw pulled back out fast would lend the touch the speed of leaving it.
+                float peak = frame.Now - st.ContactStart <= ArrivalGrace
+                    ? Mathf.Max(st.EntryPeak, VRHands.PeakSpeed(right))
+                    : st.EntryPeak;
                 var vel = VRHands.TrackVel(right);
                 if (st.ComesBackThrough(c, frame.Now))
                 {

@@ -28,7 +28,8 @@ namespace DnWVR.VR
         public static float ExitRadius = 0.075f;       // m; contact holds until the palm centre is this far away
         public static float ReleaseTime = 0.06f;       // s without contact before a paw can slap again
         public static float PlapCooldown = 0.12f;      // s between slaps of one paw
-        public static float PlapWindow = 0.1f;         // s after contact starts in which the peak speed can still slap
+        public static float PlapWindow = 0.1f;         // s after contact starts in which the paw can still slap
+        const float ArrivalGrace = 0.025f;             // s after contact starts that still count towards its speed
         public static float ComeBackTime = 0.5f;       // s after a slap in which the far face of that part never slaps (the swing coming back through it)
         public static bool StrokeRequiresMotion = true;
         public static float StrokeTravel = 0.01f;      // m along the surface within StrokeWindow that counts as stroking
