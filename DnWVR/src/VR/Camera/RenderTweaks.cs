@@ -26,17 +26,16 @@ namespace DnWVR.VR
         };
 
         /// <summary>
-        /// Pref: the savings that cost nothing visible in the headset - a cheaper SSAO, no fluid passes while there is no
-        /// fluid, no bloom where it is too faint to see, and no copy of each eye that nothing reads. One switch, so that all
-        /// of it can be compared against the game.
+        /// Pref: the savings that cost nothing visible in the headset - no fluid passes while there is no fluid, no bloom
+        /// where it is too faint to see, and no copy of each eye that nothing reads. One switch, so that all of it can be
+        /// compared against the game.
         /// </summary>
         public static bool Optimize = true;
 
         // Bloom this faint is a full chain of passes for nothing anyone can see; the sex scenes' own glow is well above it.
         const float InvisibleBloom = 0.05f;
 
-        static FieldInfo s_ssaoSettings, s_ssaoDownsample, s_fluidSystems;
-        static readonly Dictionary<object, bool> s_ssaoAuthored = new Dictionary<object, bool>();
+        static FieldInfo s_fluidSystems;
         static readonly List<VolumeComponent> s_disabled = new List<VolumeComponent>();
         static bool s_fluidPasses = true;
         static ICollection s_fluidList;
@@ -192,7 +191,6 @@ namespace DnWVR.VR
         {
             if (!XR.XRBootstrap.IsRunning) return;
             ApplyFluidFeatureSwitch();
-            ApplySsao();
             ApplyOpaqueCopy();
             int disabled = 0, faintBloom = 0;
             try
@@ -233,7 +231,7 @@ namespace DnWVR.VR
         }
 
         /// <summary>
-        /// Puts back what VR changed on assets the flat game shares - the post-processing overrides and the SSAO settings -
+        /// Puts back what VR changed on assets the flat game shares - the post-processing overrides and the opaque copy -
         /// so that stopping VR (F11) leaves the game looking as it did.
         /// </summary>
         public static void Restore()
@@ -241,13 +239,6 @@ namespace DnWVR.VR
             foreach (var comp in s_disabled)
                 if (comp != null) comp.active = true;
             s_disabled.Clear();
-            try
-            {
-                foreach (var pair in s_ssaoAuthored)
-                    s_ssaoDownsample.SetValue(pair.Key, pair.Value);
-            }
-            catch (Exception e) { Log.Warning("[RenderTweaks] SSAO settings not restored: " + e.Message); }
-            s_ssaoAuthored.Clear();
             if (s_opaqueAsset != null) s_opaqueAsset.supportsCameraOpaqueTexture = s_opaqueAuthored;
             s_opaqueAsset = null;
         }
@@ -275,41 +266,6 @@ namespace DnWVR.VR
             s_opaqueAuthored = true;
             asset.supportsCameraOpaqueTexture = false;
             Log.Msg("[RenderTweaks] no opaque copy of each eye" + (FluidSizeRedirected ? "" : ", except on renders that draw fluid"));
-        }
-
-        /// <summary>
-        /// Runs the game's SSAO at a quarter of the pixels, which is also where its blur then runs. The blur stays the game's
-        /// own: the occlusion is sampled with blue noise that moves on every render of every eye, and the one-pass blur
-        /// leaves that showing as static in corners and where surfaces meet. The feature reads these settings every frame,
-        /// so the change takes hold at once and is undone by <see cref="Restore"/>.
-        /// </summary>
-        static void ApplySsao()
-        {
-            if (!Optimize) return;
-            try
-            {
-                int changed = 0;
-                foreach (var feature in Resources.FindObjectsOfTypeAll<ScriptableRendererFeature>())
-                {
-                    if (feature.GetType().Name != "ScreenSpaceAmbientOcclusion") continue;
-                    if (s_ssaoSettings == null)
-                    {
-                        s_ssaoSettings = AccessTools.Field(feature.GetType(), "m_Settings");
-                        var settingsType = s_ssaoSettings.FieldType;
-                        s_ssaoDownsample = AccessTools.Field(settingsType, "Downsample");
-                    }
-                    var settings = s_ssaoSettings.GetValue(feature);
-                    if (settings == null || s_ssaoAuthored.ContainsKey(settings)) continue;
-                    s_ssaoAuthored[settings] = (bool)s_ssaoDownsample.GetValue(settings);
-                    s_ssaoDownsample.SetValue(settings, true);
-                    changed++;
-                }
-                if (changed > 0) Log.Msg($"[RenderTweaks] SSAO at half resolution on {changed} renderer(s)");
-            }
-            catch (Exception e)
-            {
-                Log.Warning("[RenderTweaks] SSAO left as the game has it: " + e.Message);
-            }
         }
 
         /// <summary>

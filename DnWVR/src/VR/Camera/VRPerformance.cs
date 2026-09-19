@@ -13,8 +13,8 @@ namespace DnWVR.VR
     /// <summary>
     /// The VR tab's Performance row: four steps from the game's own picture to the cheapest one that still reads well in a
     /// headset. Each step gives up first what costs the most for the least that shows: the monitor's copy of the view,
-    /// then the shadows, then the eyes' resolution and anti-aliasing. The pipeline asset and the lights it changes are the
-    /// flat game's too, so all of it goes back as it was when VR stops.
+    /// the ambient occlusion and the shadows, then the eyes' resolution and anti-aliasing. The pipeline asset, renderer
+    /// and lights it changes are the flat game's too, so all of it goes back as it was when VR stops.
     /// </summary>
     public static class VRPerformance
     {
@@ -42,6 +42,7 @@ namespace DnWVR.VR
         static int s_msaaAuthored, s_cascades;
         static readonly Dictionary<UniversalAdditionalLightData, SoftShadowQuality> s_lights =
             new Dictionary<UniversalAdditionalLightData, SoftShadowQuality>();
+        static readonly List<ScriptableRendererFeature> s_ssaoOff = new List<ScriptableRendererFeature>();
         static PropertyInfo s_assetSoftQuality;
         static FieldInfo s_xrMsaa;
         static bool s_xrMsaaLooked;
@@ -73,6 +74,7 @@ namespace DnWVR.VR
             {
                 ApplyAsset(lighter);
                 ApplyLights(lighter);
+                ApplySsao(lighter);
             }
             catch (Exception e)
             {
@@ -85,7 +87,8 @@ namespace DnWVR.VR
                 var asset = s_asset;
                 Log.Msg($"[Performance] {Name}: " + (asset == null ? "no URP asset" :
                         $"render scale {asset.renderScale:0.00}, MSAA {asset.msaaSampleCount}x, shadows {asset.shadowCascadeCount} " +
-                        $"cascades to {asset.shadowDistance:0} m, {s_lights.Count} lights at medium soft shadows") +
+                        $"cascades to {asset.shadowDistance:0} m, {s_lights.Count} lights at medium soft shadows, " +
+                        $"SSAO {(s_ssaoOff.Count > 0 ? "off" : "as the game has it")}") +
                         $", desktop view {(DesktopView.UseEye ? "showing the left eye" : lighter ? "720p without shadows" : "as set")}");
             }
         }
@@ -95,6 +98,7 @@ namespace DnWVR.VR
         {
             RestoreAsset();
             RestoreLights();
+            RestoreSsao();
             s_logged = -1;
         }
 
@@ -170,6 +174,32 @@ namespace DnWVR.VR
                 s_lights[data] = quality;
                 data.softShadowQuality = SoftShadowQuality.Medium;
             }
+        }
+
+        // The game's SSAO is faint, at a thirtieth of URP's usual strength, yet it is four full-size passes on every eye,
+        // and the blue noise it samples with moves on every render, so each eye shimmers on its own in corners and where
+        // surfaces meet. It stays exactly as the game has it on Quality and goes from Balanced on. When the feature is off
+        // URP neither runs it nor leaves its keyword set.
+        static void ApplySsao(bool lighter)
+        {
+            if (!lighter)
+            {
+                RestoreSsao();
+                return;
+            }
+            foreach (var feature in Resources.FindObjectsOfTypeAll<ScriptableRendererFeature>())
+            {
+                if (feature.GetType().Name != "ScreenSpaceAmbientOcclusion" || !feature.isActive || s_ssaoOff.Contains(feature)) continue;
+                feature.SetActive(false);
+                s_ssaoOff.Add(feature);
+            }
+        }
+
+        static void RestoreSsao()
+        {
+            foreach (var feature in s_ssaoOff)
+                if (feature != null) feature.SetActive(true);
+            s_ssaoOff.Clear();
         }
 
         static void RestoreLights()
