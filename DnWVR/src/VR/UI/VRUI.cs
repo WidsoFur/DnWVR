@@ -57,6 +57,7 @@ namespace DnWVR.VR
 
         static HudFollower s_hudFollower;
         static AccessTools.FieldRef<UiPrompt, RectTransform> s_promptRect;
+        static AccessTools.FieldRef<UiProgressBar, Material> s_barMaterial;
 
         /// <summary>Adds a world-space panel the mod builds itself: the laser points at it and it draws over the world.</summary>
         public static void AddPanel(Canvas c)
@@ -71,6 +72,8 @@ namespace DnWVR.VR
 
         public static void ApplyPatches(HarmonyLib.Harmony harmony)
         {
+            try { s_barMaterial = AccessTools.FieldRefAccess<UiProgressBar, Material>("_material"); }
+            catch (Exception e) { Log.Warning("[VRUI] progress bar material not found, the bars may not fill in VR: " + e.Message); }
             try
             {
                 s_promptRect = AccessTools.FieldRefAccess<UiPrompt, RectTransform>("promptRectTransform");
@@ -188,11 +191,27 @@ namespace DnWVR.VR
                 else
                 {
                     var material = g.material;
+                    if (OwnBarMaterial(g, material))
+                    {
+                        // The bar writes its fill to this instance every frame; a copy would stop the bar where it stood.
+                        material.renderQueue = OnTopQueue;
+                        material.SetInt("unity_GUIZTestMode", (int)CompareFunction.Always);
+                        s_onTopCopies.Add(material);
+                        continue;
+                    }
                     var top = OnTopMaterial(material);
                     if (top != material) g.material = top;
                 }
             }
             s_graphics.Clear();
+        }
+
+        // Whether material is the instance a progress bar made for this graphic alone, and never a shared asset.
+        static bool OwnBarMaterial(Graphic g, Material material)
+        {
+            if (s_barMaterial == null || material == null || s_onTopCopies.Contains(material)) return false;
+            var bar = g.GetComponentInParent<UiProgressBar>(true);
+            return bar != null && s_barMaterial(bar) == material;
         }
 
         static Material OnTopMaterial(Material source)
