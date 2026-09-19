@@ -35,8 +35,8 @@ namespace DnWVR.VR
         // Bloom this faint is a full chain of passes for nothing anyone can see; the sex scenes' own glow is well above it.
         const float InvisibleBloom = 0.05f;
 
-        static FieldInfo s_ssaoSettings, s_ssaoDownsample, s_ssaoBlur, s_fluidSystems;
-        static readonly Dictionary<object, KeyValuePair<bool, object>> s_ssaoAuthored = new Dictionary<object, KeyValuePair<bool, object>>();
+        static FieldInfo s_ssaoSettings, s_ssaoDownsample, s_fluidSystems;
+        static readonly Dictionary<object, bool> s_ssaoAuthored = new Dictionary<object, bool>();
         static readonly List<VolumeComponent> s_disabled = new List<VolumeComponent>();
         static bool s_fluidPasses = true;
         static ICollection s_fluidList;
@@ -244,10 +244,7 @@ namespace DnWVR.VR
             try
             {
                 foreach (var pair in s_ssaoAuthored)
-                {
-                    s_ssaoDownsample.SetValue(pair.Key, pair.Value.Key);
-                    s_ssaoBlur.SetValue(pair.Key, pair.Value.Value);
-                }
+                    s_ssaoDownsample.SetValue(pair.Key, pair.Value);
             }
             catch (Exception e) { Log.Warning("[RenderTweaks] SSAO settings not restored: " + e.Message); }
             s_ssaoAuthored.Clear();
@@ -281,9 +278,10 @@ namespace DnWVR.VR
         }
 
         /// <summary>
-        /// Runs the game's SSAO at a quarter of the pixels with the one-pass blur. It is a full-resolution effect with a
-        /// three-pass blur on every eye, and at the faint intensity this game uses the difference cannot be seen. The feature
-        /// reads these settings every frame, so the change takes hold at once and is undone by <see cref="Restore"/>.
+        /// Runs the game's SSAO at a quarter of the pixels, which is also where its blur then runs. The blur stays the game's
+        /// own: the occlusion is sampled with blue noise that moves on every render of every eye, and the one-pass blur
+        /// leaves that showing as static in corners and where surfaces meet. The feature reads these settings every frame,
+        /// so the change takes hold at once and is undone by <see cref="Restore"/>.
         /// </summary>
         static void ApplySsao()
         {
@@ -299,17 +297,14 @@ namespace DnWVR.VR
                         s_ssaoSettings = AccessTools.Field(feature.GetType(), "m_Settings");
                         var settingsType = s_ssaoSettings.FieldType;
                         s_ssaoDownsample = AccessTools.Field(settingsType, "Downsample");
-                        s_ssaoBlur = AccessTools.Field(settingsType, "BlurQuality");
                     }
                     var settings = s_ssaoSettings.GetValue(feature);
                     if (settings == null || s_ssaoAuthored.ContainsKey(settings)) continue;
-                    s_ssaoAuthored[settings] = new KeyValuePair<bool, object>(
-                        (bool)s_ssaoDownsample.GetValue(settings), s_ssaoBlur.GetValue(settings));
+                    s_ssaoAuthored[settings] = (bool)s_ssaoDownsample.GetValue(settings);
                     s_ssaoDownsample.SetValue(settings, true);
-                    s_ssaoBlur.SetValue(settings, Enum.Parse(s_ssaoBlur.FieldType, "Low"));
                     changed++;
                 }
-                if (changed > 0) Log.Msg($"[RenderTweaks] SSAO downsampled with the one-pass blur on {changed} renderer(s)");
+                if (changed > 0) Log.Msg($"[RenderTweaks] SSAO at half resolution on {changed} renderer(s)");
             }
             catch (Exception e)
             {
