@@ -143,7 +143,10 @@ namespace DnWVR.VR
                     if (already) continue;
                     foreach (var binding in action.bindings)
                     {
-                        if (binding.isComposite || binding.effectivePath == null) continue;
+                        // A composite's parts - the up, down, left and right of UI/Navigate's stick - only make sense inside
+                        // it. Copied out on their own they bind a single axis to an action that reads a Vector2, and every
+                        // move of the stick throws.
+                        if (binding.isComposite || binding.isPartOfComposite || binding.effectivePath == null) continue;
                         if (!binding.effectivePath.StartsWith(generic)) continue;
                         wanted.Add(new KeyValuePair<InputAction, string>(action, own + binding.effectivePath.Substring(generic.Length)));
                     }
