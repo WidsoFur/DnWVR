@@ -125,8 +125,7 @@ is not in the default Steam path, put your own in `Directory.Build.user.props`:
 ## Disclaimer
 
 DnWVR is an independent mod. It is not affiliated with Gator Dragon Games, the makers of Drag'n Wash, nor with any other
-mod for the game. It is distributed only here on GitHub and on its itch.io page,
-[widso.itch.io/dnwvr](https://widso.itch.io/dnwvr); a copy from anywhere else did not come from its author.
+mod for the game. It is distributed only here on GitHub; a copy from anywhere else did not come from its author.
 
 ## Licence
 
