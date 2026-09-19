@@ -28,6 +28,7 @@ namespace DnWVR
         public static Pref<bool> DialogueCameraZoom, DialogueAutoAdvance,
             DialogueTriggerSkip, UIOnTop;
         public static Pref<float> OptionsFontScale;
+        public static Pref<bool> VRRenderOptimizations, LogPerformance;
         public static Pref<int> MenuWidthCm;
         public static Pref<float> SpongeReach;
         public static Pref<float> DialogueLineSeconds, SexSceneBuildUpSeconds,
@@ -51,7 +52,8 @@ namespace DnWVR
             PrefStore.Open();
             EnableVR = PrefStore.Create("EnableVR", true, "Start OpenXR when the game boots");
             SinglePassInstanced = PrefStore.Create("SinglePassInstanced", false,
-                "Use single-pass instanced stereo (faster) instead of multi-pass (more compatible)");
+                "Single-pass instanced stereo. This game build ships no single-pass shader variants, so it cannot work here; " +
+                "leave it false");
             DumpOnSceneLoad = PrefStore.Create("DumpOnSceneLoad", false, "Dump scene diagnostics after each scene load");
             StartupRetries = PrefStore.Create("StartupRetries", 12,
                 "How many times (5 s apart) to retry OpenXR init at startup while the headset is not ready");
@@ -186,6 +188,13 @@ namespace DnWVR
                 "A grip or trigger press skips dialogue lines outside interactive sex scenes: a line shows in full, then the " +
                 "next one comes (either grip skips; the hand holding a tool and the pointer's hand keep their trigger; answers " +
                 "need the laser)");
+            VRRenderOptimizations = PrefStore.Create("VRRenderOptimizations", true,
+                "Rendering savings that cost nothing visible in the headset: a cheaper SSAO, no fluid passes while nothing is " +
+                "liquid, no bloom too faint to see, and FXAA instead of 4x MSAA on the desktop window. Off = the game's own, " +
+                "for comparing");
+            LogPerformance = PrefStore.Create("LogPerformance", true,
+                "Every 5 s in VR, a [Perf] line in the log: frame times and the GPU and compositor times the runtime reports. " +
+                "Attach it when reporting slowness");
             MenuWidthCm = PrefStore.Create("MenuWidthCm", 230,
                 "How wide (cm) the menu panels stand in front of you. This is the setting that makes a menu easier to " +
                 "read: everything on the panel grows together, text and boxes alike");

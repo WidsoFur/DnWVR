@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -21,8 +23,23 @@ namespace DnWVR.VR
             typeof(MotionBlur), typeof(DepthOfField), typeof(PaniniProjection), typeof(ScreenSpaceLensFlare),
         };
 
+        /// <summary>
+        /// Pref: the savings that cost nothing visible in the headset - a cheaper SSAO, no fluid passes while there is no
+        /// fluid, and no bloom where it is too faint to see. One switch, so that all of it can be compared against the game.
+        /// </summary>
+        public static bool Optimize = true;
+
+        // Bloom this faint is a full chain of passes for nothing anyone can see; the sex scenes' own glow is well above it.
+        const float InvisibleBloom = 0.05f;
+
+        static FieldInfo s_ssaoSettings, s_ssaoDownsample, s_ssaoBlur, s_fluidSystems;
+        static readonly Dictionary<object, KeyValuePair<bool, object>> s_ssaoAuthored = new Dictionary<object, KeyValuePair<bool, object>>();
+        static readonly List<VolumeComponent> s_disabled = new List<VolumeComponent>();
+        static bool s_fluidPasses = true;
+
         public static void ApplyPatches(HarmonyLib.Harmony harmony)
         {
+            PatchFluidGate(harmony);
             try
             {
                 var original = AccessTools.Method(typeof(CameraSettingsListener), "OnAntiAliasingChanged");
@@ -164,7 +181,8 @@ namespace DnWVR.VR
         {
             if (!XR.XRBootstrap.IsRunning) return;
             ApplyFluidFeatureSwitch();
-            int disabled = 0;
+            ApplySsao();
+            int disabled = 0, faintBloom = 0;
             try
             {
                 foreach (var volume in UnityEngine.Object.FindObjectsByType<Volume>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -179,8 +197,15 @@ namespace DnWVR.VR
                             if (t.IsInstanceOfType(comp) && comp.active)
                             {
                                 comp.active = false;
+                                s_disabled.Add(comp);
                                 disabled++;
                             }
+                        }
+                        if (Optimize && comp is Bloom bloom && bloom.active && bloom.intensity.value < InvisibleBloom)
+                        {
+                            bloom.active = false;
+                            s_disabled.Add(bloom);
+                            faintBloom++;
                         }
                     }
                 }
@@ -192,6 +217,112 @@ namespace DnWVR.VR
                 Log.Warning("[RenderTweaks] ApplyToScene failed: " + e.Message);
             }
             if (disabled > 0) Log.Msg($"[RenderTweaks] disabled {disabled} post-processing overrides for VR");
+            if (faintBloom > 0) Log.Msg($"[RenderTweaks] disabled {faintBloom} bloom overrides too faint to see");
+        }
+
+        /// <summary>
+        /// Puts back what VR changed on assets the flat game shares - the post-processing overrides and the SSAO settings -
+        /// so that stopping VR (F11) leaves the game looking as it did.
+        /// </summary>
+        public static void Restore()
+        {
+            foreach (var comp in s_disabled)
+                if (comp != null) comp.active = true;
+            s_disabled.Clear();
+            try
+            {
+                foreach (var pair in s_ssaoAuthored)
+                {
+                    s_ssaoDownsample.SetValue(pair.Key, pair.Value.Key);
+                    s_ssaoBlur.SetValue(pair.Key, pair.Value.Value);
+                }
+            }
+            catch (Exception e) { Log.Warning("[RenderTweaks] SSAO settings not restored: " + e.Message); }
+            s_ssaoAuthored.Clear();
+        }
+
+        /// <summary>After a preference reload (F6): puts the game's settings back and applies them again under the switch as it now is.</summary>
+        public static void ReapplyOptimizations()
+        {
+            if (!XR.XRBootstrap.IsRunning) return;
+            Restore();
+            ApplyToScene();
+        }
+
+        /// <summary>
+        /// Runs the game's SSAO at a quarter of the pixels with the one-pass blur. It is a full-resolution effect with a
+        /// three-pass blur on every eye, and at the faint intensity this game uses the difference cannot be seen. The feature
+        /// reads these settings every frame, so the change takes hold at once and is undone by <see cref="Restore"/>.
+        /// </summary>
+        static void ApplySsao()
+        {
+            if (!Optimize) return;
+            try
+            {
+                int changed = 0;
+                foreach (var feature in Resources.FindObjectsOfTypeAll<ScriptableRendererFeature>())
+                {
+                    if (feature.GetType().Name != "ScreenSpaceAmbientOcclusion") continue;
+                    if (s_ssaoSettings == null)
+                    {
+                        s_ssaoSettings = AccessTools.Field(feature.GetType(), "m_Settings");
+                        var settingsType = s_ssaoSettings.FieldType;
+                        s_ssaoDownsample = AccessTools.Field(settingsType, "Downsample");
+                        s_ssaoBlur = AccessTools.Field(settingsType, "BlurQuality");
+                    }
+                    var settings = s_ssaoSettings.GetValue(feature);
+                    if (settings == null || s_ssaoAuthored.ContainsKey(settings)) continue;
+                    s_ssaoAuthored[settings] = new KeyValuePair<bool, object>(
+                        (bool)s_ssaoDownsample.GetValue(settings), s_ssaoBlur.GetValue(settings));
+                    s_ssaoDownsample.SetValue(settings, true);
+                    s_ssaoBlur.SetValue(settings, Enum.Parse(s_ssaoBlur.FieldType, "Low"));
+                    changed++;
+                }
+                if (changed > 0) Log.Msg($"[RenderTweaks] SSAO downsampled with the one-pass blur on {changed} renderer(s)");
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[RenderTweaks] SSAO left as the game has it: " + e.Message);
+            }
+        }
+
+        /// <summary>
+        /// The fluid renderer clears two full-size targets and composites a full-screen copy on every render of every eye,
+        /// whether or not anything in the scene is liquid. Its systems register themselves while they are enabled, so an empty
+        /// list is a frame with nothing to draw, and the passes are simply not queued then.
+        /// </summary>
+        static void PatchFluidGate(HarmonyLib.Harmony harmony)
+        {
+            try
+            {
+                var type = AccessTools.TypeByName("FluidRenderingForGames.FluidRenderingRendererFeature");
+                var original = type != null ? AccessTools.Method(type, "AddRenderPasses") : null;
+                s_fluidSystems = type != null ? AccessTools.Field(type, "systems") : null;
+                if (original == null || s_fluidSystems == null)
+                {
+                    Log.Warning("[RenderTweaks] fluid renderer not as expected; its passes run every frame as before");
+                    return;
+                }
+                harmony.Patch(original, new HarmonyMethod(typeof(RenderTweaks).GetMethod(nameof(FluidAddRenderPasses_Prefix), Any)));
+                Log.Msg("[RenderTweaks] patched FluidRenderingRendererFeature.AddRenderPasses");
+            }
+            catch (Exception e)
+            {
+                Log.Warning("[RenderTweaks] fluid gate not installed: " + e.Message);
+            }
+        }
+
+        static bool FluidAddRenderPasses_Prefix(object __instance)
+        {
+            if (!Optimize || !XR.XRBootstrap.IsRunning) return true;
+            var systems = (s_fluidSystems.IsStatic ? s_fluidSystems.GetValue(null) : s_fluidSystems.GetValue(__instance)) as ICollection;
+            bool any = systems == null || systems.Count > 0;
+            if (any != s_fluidPasses)
+            {
+                s_fluidPasses = any;
+                Log.Msg($"[RenderTweaks] fluid passes {(any ? "on" : "off")}, {(systems != null ? systems.Count : 0)} fluid systems");
+            }
+            return any;
         }
 
         static void ApplyCamera(Camera cam)

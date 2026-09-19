@@ -85,8 +85,12 @@ Both downloads are on the [releases page](../../releases/latest), and `F6` re-re
 
 Keyboard: `F5` head tracking on/off, `F6` reload settings, `F8` recenter, `F11` stop/start VR.
 
-Every setting lives in `<game folder>\UserData\MelonPreferences.cfg`, each with a line saying what it does - turn
+Every setting lives in the config file named in the install steps above, each with a line saying what it does - turn
 speed, hand offsets, body size, the pace of the sex scenes, the desktop view. Edit it while playing and press `F6`.
+
+If the game stutters in the headset, the log has a `[Perf]` line every 5 s with the frame times and the GPU and
+compositor times the VR runtime reports; attach it when you report it. `VRRenderOptimizations` turns off the mod's
+own rendering savings, to compare against the game as it ships.
 
 ## Build
 

@@ -136,6 +136,7 @@ namespace DnWVR
             PlayerBody.Detach();
             SexScene.Detach();
             DesktopView.Disable();
+            RenderTweaks.Restore();
             XRBootstrap.Stop();
         }
 
@@ -247,6 +248,7 @@ namespace DnWVR
         /// <summary>Every frame.</summary>
         public static void Tick()
         {
+            PerfLog.Tick();
             DesktopView.Tick();
             SceneWalk.Tick();
             // A camera can also appear after the scene load that adopted one (or after VR starts).
@@ -274,6 +276,7 @@ namespace DnWVR
                 VRHands.ApplyOffsets();
                 PlayerBody.ApplySettings();
                 RenderTweaks.ReapplyFluidSwitch();
+                RenderTweaks.ReapplyOptimizations();
                 Log.Msg("Preferences reloaded and applied");
             }
             if (kb.f8Key.wasPressedThisFrame)
@@ -339,6 +342,8 @@ namespace DnWVR
             DialogueVR.SkipLines = Prefs.DialogueTriggerSkip.Value;
             VRUI.OnTop = Prefs.UIOnTop.Value;
             VRSettings.FontScale = Mathf.Clamp(Prefs.OptionsFontScale.Value, 0.5f, 3f);
+            RenderTweaks.Optimize = Prefs.VRRenderOptimizations.Value;
+            PerfLog.Enabled = Prefs.LogPerformance.Value;
             VRUI.MenuWidthMeters = Mathf.Clamp(Prefs.MenuWidthCm.Value, VRSettings.MinMenuCm, VRSettings.MaxMenuCm) * 0.01f;
             VRUI.ApplyMenuSize();
             DebugInteractionLog = Prefs.DebugInteractionLog.Value;

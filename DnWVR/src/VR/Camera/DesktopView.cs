@@ -149,9 +149,11 @@ namespace DnWVR.VR
             }
         }
 
-        // With a target texture URP takes the sample count from the texture: match the eyes.
+        // With a target texture URP takes the sample count from the texture. The view is for the monitor, where FXAA reads
+        // the same and costs a fraction of four samples on a whole extra render; only without the savings does it match the eyes.
         static int Msaa(Camera source)
         {
+            if (RenderTweaks.Optimize) return 1;
             var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             int samples = asset != null && source.allowMSAA ? asset.msaaSampleCount : 1;
             return samples == 2 || samples == 4 || samples == 8 ? samples : 1;
@@ -200,7 +202,7 @@ namespace DnWVR.VR
                 if (s_rendererIndex(dd) != index) dd.SetRenderer(index);
             }
             dd.renderPostProcessing = sd.renderPostProcessing;
-            dd.antialiasing = sd.antialiasing;
+            dd.antialiasing = RenderTweaks.Optimize ? AntialiasingMode.FastApproximateAntialiasing : sd.antialiasing;
             dd.antialiasingQuality = sd.antialiasingQuality;
             dd.stopNaN = sd.stopNaN;
             dd.dithering = sd.dithering;
