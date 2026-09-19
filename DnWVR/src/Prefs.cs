@@ -190,8 +190,8 @@ namespace DnWVR
                 "need the laser)");
             VRRenderOptimizations = PrefStore.Create("VRRenderOptimizations", true,
                 "Rendering savings that cost nothing visible in the headset: a cheaper SSAO, no fluid passes while nothing is " +
-                "liquid, no bloom too faint to see, and FXAA instead of 4x MSAA on the desktop window. Off = the game's own, " +
-                "for comparing");
+                "liquid, no bloom too faint to see, no copy of each eye that nothing reads, and FXAA instead of 4x MSAA on " +
+                "the desktop window. Off = the game's own, for comparing");
             LogPerformance = PrefStore.Create("LogPerformance", true,
                 "Every 5 s in VR, a [Perf] line in the log: frame times and the GPU and compositor times the runtime reports. " +
                 "Attach it when reporting slowness");

@@ -190,7 +190,7 @@ namespace DnWVR.VR
         bool SolveOnPenis(ref Vector3 palm, float radius, bool newFrame, float dt, out Vector3 normal)
         {
             normal = Vector3.up;
-            if (!VRHands.RestOnPenis || !PenisTube.Closest(palm, out var center, out float tubeRadius, out var axis))
+            if (!VRHands.RestOnPenis || !PenisTube.Closest(palm, _onPenis, out var center, out float tubeRadius, out var axis))
             {
                 _onPenis = false;
                 _hasPenisSide = false;

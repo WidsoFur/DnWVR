@@ -2,9 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
 
 namespace DnWVR.VR
@@ -25,7 +27,8 @@ namespace DnWVR.VR
 
         /// <summary>
         /// Pref: the savings that cost nothing visible in the headset - a cheaper SSAO, no fluid passes while there is no
-        /// fluid, and no bloom where it is too faint to see. One switch, so that all of it can be compared against the game.
+        /// fluid, no bloom where it is too faint to see, and no copy of each eye that nothing reads. One switch, so that all
+        /// of it can be compared against the game.
         /// </summary>
         public static bool Optimize = true;
 
@@ -36,6 +39,14 @@ namespace DnWVR.VR
         static readonly Dictionary<object, KeyValuePair<bool, object>> s_ssaoAuthored = new Dictionary<object, KeyValuePair<bool, object>>();
         static readonly List<VolumeComponent> s_disabled = new List<VolumeComponent>();
         static bool s_fluidPasses = true;
+        static ICollection s_fluidList;
+        static bool s_fluidGateInstalled;
+        static readonly HashSet<string> s_fluidSized = new HashSet<string>();
+        static UniversalRenderPipelineAsset s_opaqueAsset;
+        static bool s_opaqueAuthored;
+
+        // Both fluid passes take their buffers' size from the depth texture when there is no opaque copy.
+        static bool FluidSizeRedirected => s_fluidSized.Count == 2;
 
         public static void ApplyPatches(HarmonyLib.Harmony harmony)
         {
@@ -182,6 +193,7 @@ namespace DnWVR.VR
             if (!XR.XRBootstrap.IsRunning) return;
             ApplyFluidFeatureSwitch();
             ApplySsao();
+            ApplyOpaqueCopy();
             int disabled = 0, faintBloom = 0;
             try
             {
@@ -239,6 +251,8 @@ namespace DnWVR.VR
             }
             catch (Exception e) { Log.Warning("[RenderTweaks] SSAO settings not restored: " + e.Message); }
             s_ssaoAuthored.Clear();
+            if (s_opaqueAsset != null) s_opaqueAsset.supportsCameraOpaqueTexture = s_opaqueAuthored;
+            s_opaqueAsset = null;
         }
 
         /// <summary>After a preference reload (F6): puts the game's settings back and applies them again under the switch as it now is.</summary>
@@ -247,6 +261,23 @@ namespace DnWVR.VR
             if (!XR.XRBootstrap.IsRunning) return;
             Restore();
             ApplyToScene();
+            DesktopView.Refresh();
+        }
+
+        /// <summary>
+        /// URP copies every eye's colour into _CameraOpaqueTexture after the opaques, for shaders that show what is behind
+        /// them. None of this game's shaders reads it; the fluid passes ask for it only to size their buffers, and they are
+        /// sized from the depth texture instead (or, failing that, the copy is kept on the renders that draw fluid).
+        /// </summary>
+        static void ApplyOpaqueCopy()
+        {
+            if (!Optimize || s_opaqueAsset != null || !(FluidSizeRedirected || s_fluidGateInstalled)) return;
+            var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            if (asset == null || !asset.supportsCameraOpaqueTexture) return;
+            s_opaqueAsset = asset;
+            s_opaqueAuthored = true;
+            asset.supportsCameraOpaqueTexture = false;
+            Log.Msg("[RenderTweaks] no opaque copy of each eye" + (FluidSizeRedirected ? "" : ", except on renders that draw fluid"));
         }
 
         /// <summary>
@@ -304,7 +335,9 @@ namespace DnWVR.VR
                     return;
                 }
                 harmony.Patch(original, new HarmonyMethod(typeof(RenderTweaks).GetMethod(nameof(FluidAddRenderPasses_Prefix), Any)));
+                s_fluidGateInstalled = true;
                 Log.Msg("[RenderTweaks] patched FluidRenderingRendererFeature.AddRenderPasses");
+                PatchFluidSize(harmony, type);
             }
             catch (Exception e)
             {
@@ -312,22 +345,89 @@ namespace DnWVR.VR
             }
         }
 
-        static bool FluidAddRenderPasses_Prefix(object __instance)
+        static bool FluidAddRenderPasses_Prefix(object __instance, ref RenderingData renderingData)
         {
-            if (!Optimize || !XR.XRBootstrap.IsRunning) return true;
-            var systems = (s_fluidSystems.IsStatic ? s_fluidSystems.GetValue(null) : s_fluidSystems.GetValue(__instance)) as ICollection;
-            bool any = systems == null || systems.Count > 0;
-            if (any != s_fluidPasses)
+            bool run = true;
+            if (Optimize && XR.XRBootstrap.IsRunning)
             {
-                s_fluidPasses = any;
-                Log.Msg($"[RenderTweaks] fluid passes {(any ? "on" : "off")}, {(systems != null ? systems.Count : 0)} fluid systems");
+                // The list is created once with the feature's type and only ever added to and removed from.
+                var systems = s_fluidList;
+                if (systems == null)
+                {
+                    systems = (s_fluidSystems.IsStatic ? s_fluidSystems.GetValue(null) : s_fluidSystems.GetValue(__instance)) as ICollection;
+                    if (s_fluidSystems.IsStatic) s_fluidList = systems;
+                }
+                run = systems == null || systems.Count > 0;
+                if (run != s_fluidPasses)
+                {
+                    s_fluidPasses = run;
+                    Log.Msg($"[RenderTweaks] fluid passes {(run ? "on" : "off")}, {(systems != null ? systems.Count : 0)} fluid systems");
+                }
             }
-            return any;
+            // Without the size redirect the passes read the opaque texture's size, so wherever they run it has to exist.
+            if (run && s_opaqueAsset != null && !FluidSizeRedirected) renderingData.cameraData.requiresOpaqueTexture = true;
+            return run;
+        }
+
+        /// <summary>
+        /// Each fluid pass reads the size of the camera's opaque texture and nothing else of it. Where that texture is not
+        /// made, the depth texture the pass already draws against gives the same size, and the pass is pointed at it.
+        /// </summary>
+        static void PatchFluidSize(HarmonyLib.Harmony harmony, Type feature)
+        {
+            var transpiler = new HarmonyMethod(typeof(RenderTweaks).GetMethod(nameof(FluidSize_Transpiler), Any));
+            foreach (var name in new[] { "FluidHeightPass", "FluidColorPass" })
+            {
+                try
+                {
+                    var pass = AccessTools.Inner(feature, name);
+                    var record = pass != null ? AccessTools.Method(pass, "RecordRenderGraph") : null;
+                    if (record == null) Log.Warning($"[RenderTweaks] fluid {name} not found");
+                    else harmony.Patch(record, transpiler: transpiler);
+                }
+                catch (Exception e)
+                {
+                    Log.Warning($"[RenderTweaks] fluid {name} left sized from the opaque texture: " + e.Message);
+                }
+            }
+            if (FluidSizeRedirected) Log.Msg("[RenderTweaks] fluid passes sized from the depth texture where there is no opaque copy");
+        }
+
+        static IEnumerable<CodeInstruction> FluidSize_Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
+        {
+            var list = new List<CodeInstruction>(instructions);
+            var opaque = AccessTools.PropertyGetter(typeof(UniversalResourceData), nameof(UniversalResourceData.cameraOpaqueTexture));
+            var desc = AccessTools.Method(typeof(RenderGraph), nameof(RenderGraph.GetTextureDesc), new[] { typeof(TextureHandle).MakeByRefType() });
+            int getter = list.FindIndex(ci => ci.Calls(opaque));
+            int read = getter < 0 ? -1 : list.FindIndex(getter, ci => ci.Calls(desc));
+            // Exactly one read, handed through a local straight to GetTextureDesc with no other call on the way: anything
+            // else is a build this was not made for.
+            bool direct = getter >= 0 && read > getter && read - getter <= 4;
+            for (int i = getter + 1; direct && i < read; i++)
+                if (list[i].opcode == OpCodes.Call || list[i].opcode == OpCodes.Callvirt) direct = false;
+            if (!direct || list.FindIndex(getter + 1, ci => ci.Calls(opaque)) >= 0)
+            {
+                Log.Warning($"[RenderTweaks] {original.DeclaringType.Name} not as expected, it keeps the opaque texture");
+                return list;
+            }
+            list[getter].opcode = OpCodes.Call;
+            list[getter].operand = AccessTools.Method(typeof(RenderTweaks), nameof(FluidSizeSource));
+            s_fluidSized.Add(original.DeclaringType.Name);
+            return list;
+        }
+
+        // Same size, dimension and samples as the opaque texture, and Point-filtered like it with this game's settings;
+        // the pass sets its own format.
+        static TextureHandle FluidSizeSource(UniversalResourceData data)
+        {
+            var opaque = data.cameraOpaqueTexture;
+            return opaque.IsValid() ? opaque : data.cameraDepthTexture;
         }
 
         static void ApplyCamera(Camera cam)
         {
-            if (cam == null) return;
+            // The desktop view picks its own anti-aliasing.
+            if (cam == null || DesktopView.Owns(cam)) return;
             var data = cam.GetComponent<UniversalAdditionalCameraData>();
             if (data != null)
             {

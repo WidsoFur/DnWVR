@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using DnWVR.Diag;
+using DnWVR.Game;
 using DnWVR.VR;
 using DnWVR.XR;
 using UnityEngine;
@@ -50,6 +51,7 @@ namespace DnWVR
             Guarded("InputPatches", () => InputPatches.Apply(Host.Harmony));
             Guarded("HandPatches", () => HandPatches.Apply(Host.Harmony));
             Guarded("RenderTweaks", () => RenderTweaks.ApplyPatches(Host.Harmony));
+            Guarded("GameCosts", () => GameCosts.ApplyPatches(Host.Harmony));
             Guarded("VRUI", () => { VRUI.Initialize(); VRUI.ApplyPatches(Host.Harmony); });
             Guarded("DialogueVR", () => DialogueVR.Apply(Host.Harmony));
             Guarded("VRHands", () => VRHands.Initialize());

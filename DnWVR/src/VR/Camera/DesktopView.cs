@@ -39,6 +39,12 @@ namespace DnWVR.VR
         static int s_lastWriteFrame = -100;
         static bool s_failed;
 
+        /// <summary>Whether cam is the view's own camera.</summary>
+        public static bool Owns(Camera cam) => cam != null && cam == s_camera;
+
+        /// <summary>Copies the game camera's settings again on the next write, for a changed preference.</summary>
+        public static void Refresh() => s_source = null;
+
         /// <summary>The texture to show in the window, or null to fall back to the eye.</summary>
         public static RenderTexture Texture => Enabled && s_camera != null && s_camera.enabled && s_texture != null && s_texture.IsCreated() ? s_texture : null;
 
