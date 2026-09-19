@@ -9,6 +9,11 @@ and dialogue become panels in front of you. Nothing about the game itself is rep
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-widsofur-ffdd00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/widsofur)
 
+## Disclaimer
+
+DnWVR is an independent mod. It is not affiliated with Gator Dragon Games, the makers of Drag'n Wash, nor with any other
+mod for the game. It is distributed only here on GitHub; a copy from anywhere else did not come from its author.
+
 ## Features
 
 - **VR** - stereo rendering and head tracking through OpenXR, tested with SteamVR and Virtual Desktop.
@@ -121,11 +126,6 @@ is not in the default Steam path, put your own in `Directory.Build.user.props`:
 ```
 
 `tools\package-release.ps1` builds the release zip.
-
-## Disclaimer
-
-DnWVR is an independent mod. It is not affiliated with Gator Dragon Games, the makers of Drag'n Wash, nor with any other
-mod for the game. It is distributed only here on GitHub; a copy from anywhere else did not come from its author.
 
 ## Licence
 
