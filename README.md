@@ -39,7 +39,7 @@ with two in the folder the mod loads twice and patches the game twice.
 1. Download [`BepInEx_win_x64_5.4.23.5.zip`](https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x64_5.4.23.5.zip),
    the **x64** one: the game is 64-bit, and the x86 build does nothing at all, without a word. Extract it into the game
    folder so that `winhttp.dll` ends up right next to `DragNWash.exe`, not in a folder of its own.
-2. Extract [`DnWVR-0.1.1-BepInEx.zip`](../../releases/download/v0.1.1/DnWVR-0.1.1-BepInEx.zip) into the same folder,
+2. Extract [`DnWVR-0.1.2-BepInEx.zip`](../../releases/download/v0.1.2/DnWVR-0.1.2-BepInEx.zip) into the same folder,
    merging the folders it brings: `BepInEx\plugins\DnWVR` plus Unity's OpenXR files in `DragNWash_Data`.
 3. Start your VR runtime, then launch the game from Steam. VR starts on its own.
 
@@ -60,7 +60,7 @@ Settings live in `BepInEx\config\com.widsofur.dnwvr.cfg`, each with a line sayin
      run it, pick `DragNWash.exe` and version 0.7.3;
    * **or** [`MelonLoader.x64.zip`](https://github.com/LavaGang/MelonLoader/releases/download/v0.7.3/MelonLoader.x64.zip):
      unpack it into the game folder so that `version.dll` ends up right next to `DragNWash.exe`.
-2. Extract [`DnWVR-0.1.1-MelonLoader.zip`](../../releases/download/v0.1.1/DnWVR-0.1.1-MelonLoader.zip) into the same
+2. Extract [`DnWVR-0.1.2-MelonLoader.zip`](../../releases/download/v0.1.2/DnWVR-0.1.2-MelonLoader.zip) into the same
    folder, merging the folders it brings: `Mods\DnWVR.dll` plus Unity's OpenXR files in `DragNWash_Data`.
 3. Start your VR runtime, then launch the game from Steam. VR starts on its own.
 

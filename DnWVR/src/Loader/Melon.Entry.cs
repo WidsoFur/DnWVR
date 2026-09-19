@@ -1,6 +1,6 @@
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(DnWVR.MelonEntry), "DnWVR", "0.1.1", "WidsoFur")]
+[assembly: MelonInfo(typeof(DnWVR.MelonEntry), "DnWVR", "0.1.2", "WidsoFur")]
 [assembly: MelonGame("Gator Dragon Games", "DragNWash")]
 // Every patch in this mod is applied by hand, so the loader's sweep for [HarmonyPatch] classes has nothing to find.
 [assembly: HarmonyDontPatchAll]

@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 namespace DnWVR
 {
     /// <summary>BepInEx's door into the mod: it binds the log, the settings and Harmony, then steps aside.</summary>
-    [BepInPlugin(Id, "DnWVR", "0.1.1")]
+    [BepInPlugin(Id, "DnWVR", "0.1.2")]
     [BepInProcess("DragNWash.exe")]
     public class BepInExEntry : BaseUnityPlugin
     {
