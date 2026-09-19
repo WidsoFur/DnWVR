@@ -114,9 +114,15 @@ is not in the default Steam path, put your own in `Directory.Build.user.props`:
 
 `tools\package-release.ps1` builds the release zip.
 
+## Disclaimer
+
+DnWVR is an independent mod. It is not affiliated with Gator Dragon Games, the makers of Drag'n Wash, nor with any other
+mod for the game. It is distributed only here on GitHub and on its itch.io page,
+[widso.itch.io/dnwvr](https://widso.itch.io/dnwvr); a copy from anywhere else did not come from its author.
+
 ## Licence
 
-DnWVR is MIT - see [LICENSE](LICENSE). It is an unofficial mod, not affiliated with the game's authors.
+DnWVR is MIT - see [LICENSE](LICENSE).
 
 [`openxr/`](openxr/) carries Unity's OpenXR provider unmodified: Unity's own packages under the Unity Package
 Distribution License and the Khronos OpenXR loader under Apache 2.0, with their licences in
