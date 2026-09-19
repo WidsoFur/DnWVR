@@ -36,10 +36,11 @@ namespace DnWVR.VR
         const string TurnAmountRowName = "DnWVR_TurnAmountRow";
         const string LiftRowName = "DnWVR_LiftRow";
         const string MenuRowName = "DnWVR_MenuRow";
+        const string PerformanceRowName = "DnWVR_PerformanceRow";
 
         // The section's own rows, in the order they belong in, which is also how it checks it is still at the bottom.
         static readonly string[] s_ours =
-            { TitleName, HeightRowName, LiftRowName, TurnRowName, TurnAmountRowName, MenuRowName };
+            { TitleName, HeightRowName, LiftRowName, TurnRowName, TurnAmountRowName, MenuRowName, PerformanceRowName };
 
         public static VRSettings Instance { get; private set; }
 
@@ -50,7 +51,7 @@ namespace DnWVR.VR
         static readonly Dictionary<int, Vector3> s_sizes = new Dictionary<int, Vector3>();
 
         ScriptableSettingSpawner _spawner;
-        TMP_InputField _height, _lift, _turnMode, _turnAmount, _menu;
+        TMP_InputField _height, _lift, _turnMode, _turnAmount, _menu, _performance;
         TextMeshProUGUI _turnAmountLabel;
         int _sweep;
         int _rows = -1;
@@ -183,6 +184,7 @@ namespace DnWVR.VR
                 BuildTurnRow(NewRow(content, TurnRowName, "Turning"));
                 BuildTurnAmountRow(NewRow(content, TurnAmountRowName, string.Empty));
                 BuildMenuRow(NewRow(content, MenuRowName, "Menu size (cm)"));
+                BuildPerformanceRow(NewRow(content, PerformanceRowName, "Performance"));
                 Refresh();
                 Log.Msg("[VRSettings] VR section added to the options screen");
             }
@@ -252,6 +254,29 @@ namespace DnWVR.VR
 
         static int MenuCm => Mathf.RoundToInt(VRUI.MenuWidthMeters * 100f);
 
+        /// <summary>
+        /// From the game's own picture on the left to the cheapest on the right; the change shows at once, and the cfg's
+        /// PerformancePreset says what each step gives up.
+        /// </summary>
+        void BuildPerformanceRow(GameObject row)
+        {
+            _performance = Number(row, 0, null);
+            if (_performance != null) _performance.readOnly = true;
+            Stepper(row, () => SetPerformance((int)VRPerformance.Current - 1), () => SetPerformance((int)VRPerformance.Current + 1));
+        }
+
+        void SetPerformance(int level)
+        {
+            var wanted = (VRPerformance.Level)Mathf.Clamp(level, (int)VRPerformance.Level.Quality, (int)VRPerformance.Level.Fastest);
+            if (wanted != VRPerformance.Current)
+            {
+                VRPerformance.Current = wanted;
+                VRPerformance.Apply();
+                Save(Prefs.PerformancePreset, VRPerformance.Name);
+            }
+            Refresh();
+        }
+
         void SetMenuSize(int cm)
         {
             VRUI.MenuWidthMeters = Mathf.Clamp(cm, MinMenuCm, MaxMenuCm) * 0.01f;
@@ -313,12 +338,13 @@ namespace DnWVR.VR
         static float TurnStep() => VRInput.SmoothTurn ? TurnSpeedStep : SnapStep;
 
         /// <summary>Writes every row from the settings themselves, so the cfg and the screen can never disagree.</summary>
-        void Refresh()
+        internal void Refresh()
         {
             Show(_height, VRRig.HeightCm.ToString());
             Show(_lift, VRRig.CameraLiftCm.ToString());
             Show(_menu, MenuCm.ToString());
             Show(_turnMode, VRInput.SmoothTurn ? "Smooth" : "Snap");
+            Show(_performance, VRPerformance.Name);
             Show(_turnAmount, Mathf.RoundToInt(TurnAmount()).ToString());
             if (_turnAmountLabel != null)
                 _turnAmountLabel.text = VRInput.SmoothTurn ? "Turn speed (°/s)" : "Snap angle (°)";

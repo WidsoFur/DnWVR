@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DnWVR.VR;
 using DnWVR.XR;
 using UnityEngine;
 using UnityEngine.XR;
@@ -17,6 +18,13 @@ namespace DnWVR.Diag
         const float Period = 5f;
         static readonly List<float> s_frames = new List<float>(1024);
         static float s_next;
+
+        /// <summary>Starts a new window, so that no line mixes frames from before a change with frames after it.</summary>
+        public static void Restart()
+        {
+            s_frames.Clear();
+            s_next = Time.unscaledTime + Period;
+        }
 
         /// <summary>Once a frame.</summary>
         public static void Tick()
@@ -49,7 +57,7 @@ namespace DnWVR.Diag
                 if (display.TryGetDroppedFrameCount(out int d)) dropped = d.ToString();
                 if (display.TryGetDisplayRefreshRate(out float hz)) refresh = $"{hz:0} Hz";
             }
-            Log.Msg($"[Perf] {count} frames: mean {mean:0.0} ms, p95 {p95:0.0} ms, worst {worst:0.0} ms; app GPU {gpu}, " +
+            Log.Msg($"[Perf] {VRPerformance.Name}, {count} frames: mean {mean:0.0} ms, p95 {p95:0.0} ms, worst {worst:0.0} ms; app GPU {gpu}, " +
                     $"compositor {compositor}, dropped {dropped}, display {refresh}");
         }
     }

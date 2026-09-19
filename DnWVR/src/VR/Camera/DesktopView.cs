@@ -22,6 +22,12 @@ namespace DnWVR.VR
         public static int Height = 1080;
         /// <summary>Seconds over which the view follows the head; 0 = exactly.</summary>
         public static float Smoothing = 0.1f;
+        /// <summary>The Performance row's cap on Height (pixels); 0 = none.</summary>
+        public static int MaxHeight;
+        /// <summary>The Performance row: whether the view draws real-time shadows of its own.</summary>
+        public static bool Shadows = true;
+        /// <summary>The Performance row: the window shows the left eye and the view does not render at all.</summary>
+        public static bool UseEye;
 
         // More than a head moves in one frame: a cut, teleport or snap turn.
         const float JumpDistance = 0.5f;
@@ -46,7 +52,7 @@ namespace DnWVR.VR
         public static void Refresh() => s_source = null;
 
         /// <summary>The texture to show in the window, or null to fall back to the eye.</summary>
-        public static RenderTexture Texture => Enabled && s_camera != null && s_camera.enabled && s_texture != null && s_texture.IsCreated() ? s_texture : null;
+        public static RenderTexture Texture => Enabled && !UseEye && s_camera != null && s_camera.enabled && s_texture != null && s_texture.IsCreated() ? s_texture : null;
 
         public static void Install()
         {
@@ -74,7 +80,7 @@ namespace DnWVR.VR
         static void Follow()
         {
             var source = VRRig.Camera;
-            if (!Enabled || s_failed || !DesktopMirror.Enabled || !VRRig.Active || source == null || !source.isActiveAndEnabled)
+            if (!Enabled || UseEye || s_failed || !DesktopMirror.Enabled || !VRRig.Active || source == null || !source.isActiveAndEnabled)
             {
                 Disable();
                 return;
@@ -116,7 +122,13 @@ namespace DnWVR.VR
             try
             {
                 int windowWidth = Mathf.Max(1, Screen.width), windowHeight = Mathf.Max(1, Screen.height);
-                int height = Mathf.Clamp(Height > 0 ? Mathf.Min(Height, windowHeight) : windowHeight, 64, 2160);
+                int height = Height > 0 ? Mathf.Min(Height, windowHeight) : windowHeight;
+                if (MaxHeight > 0) height = Mathf.Min(height, MaxHeight);
+                // URP renders every game camera at the eyes' render scale, this one too: the texture is made that much
+                // taller, so that what is rendered into it is the height asked for.
+                var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+                if (asset != null && Mathf.Abs(1f - asset.renderScale) >= 0.05f) height = Mathf.RoundToInt(height / asset.renderScale);
+                height = Mathf.Clamp(height, 64, 2160);
                 int width = Mathf.Clamp(Mathf.RoundToInt(height * (float)windowWidth / windowHeight), 64, 4096);
                 int msaa = Msaa(source);
                 if (s_texture == null || s_texture.width != width || s_texture.height != height || s_texture.antiAliasing != msaa)
@@ -212,7 +224,7 @@ namespace DnWVR.VR
             dd.antialiasingQuality = sd.antialiasingQuality;
             dd.stopNaN = sd.stopNaN;
             dd.dithering = sd.dithering;
-            dd.renderShadows = sd.renderShadows;
+            dd.renderShadows = sd.renderShadows && Shadows;
             dd.requiresDepthOption = sd.requiresDepthOption;
             dd.requiresColorOption = sd.requiresColorOption;
             dd.volumeLayerMask = sd.volumeLayerMask;

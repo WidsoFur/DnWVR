@@ -111,6 +111,7 @@ namespace DnWVR
             MenuHands.Ensure();
             VRSettings.Ensure();
             RenderTweaks.ApplyToScene();
+            VRPerformance.Apply();
             VRUI.ConvertAll();
             Host.StartCoroutine(StereoDiagnosticsAfterDelay());
             return true;
@@ -139,6 +140,7 @@ namespace DnWVR
             SexScene.Detach();
             DesktopView.Disable();
             RenderTweaks.Restore();
+            VRPerformance.Restore();
             XRBootstrap.Stop();
         }
 
@@ -180,6 +182,7 @@ namespace DnWVR
                 });
                 Guarded("InputPatches", InputPatches.ForceControllerGlyphs);
                 Guarded("RenderTweaks", () => RenderTweaks.ApplyToScene());
+                Guarded("VRPerformance", VRPerformance.Apply);
                 Guarded("VRUI", VRUI.ConvertAll);
                 yield return TakeOverPlayer(sceneName);
             }
@@ -279,6 +282,8 @@ namespace DnWVR
                 PlayerBody.ApplySettings();
                 RenderTweaks.ReapplyFluidSwitch();
                 RenderTweaks.ReapplyOptimizations();
+                VRPerformance.Apply();
+                if (VRSettings.Instance != null) VRSettings.Instance.Refresh();
                 Log.Msg("Preferences reloaded and applied");
             }
             if (kb.f8Key.wasPressedThisFrame)
@@ -345,6 +350,7 @@ namespace DnWVR
             VRUI.OnTop = Prefs.UIOnTop.Value;
             VRSettings.FontScale = Mathf.Clamp(Prefs.OptionsFontScale.Value, 0.5f, 3f);
             RenderTweaks.Optimize = Prefs.VRRenderOptimizations.Value;
+            VRPerformance.Current = VRPerformance.Parse(Prefs.PerformancePreset.Value);
             PerfLog.Enabled = Prefs.LogPerformance.Value;
             VRUI.MenuWidthMeters = Mathf.Clamp(Prefs.MenuWidthCm.Value, VRSettings.MinMenuCm, VRSettings.MaxMenuCm) * 0.01f;
             VRUI.ApplyMenuSize();
