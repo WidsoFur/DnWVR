@@ -12,7 +12,7 @@ and dialogue become panels in front of you. Nothing about the game itself is rep
 ## Disclaimer
 
 DnWVR is an independent mod. It is not affiliated with Gator Dragon Games, the makers of Drag'n Wash, nor with any other
-mod for the game. It is distributed only here on GitHub; a copy from anywhere else did not come from its author.
+mod for the game. It is distributed only on GitHub or [`Itch.io page here`](https://widso.itch.io/dnwvr); a copy from anywhere else did not come from its author.
 
 ## Features
 
