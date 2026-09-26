@@ -9,6 +9,8 @@ and dialogue become panels in front of you. Nothing about the game itself is rep
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-widsofur-ffdd00?style=flat-square&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/widsofur)
 
+(A little message for randomcat4: I know you're using my code to improve yours. If you add this page to the credits, I'll continue developing it.)
+
 ## Disclaimer
 
 DnWVR is an independent mod. It is not affiliated with Gator Dragon Games, the makers of Drag'n Wash, nor with any other
